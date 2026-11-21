@@ -27,10 +27,11 @@
 | 화면 | 역할 | 상태 |
 |---|---|---|
 | 구역 지도 | 250m 격자별 배치 추천도를 보고 근무 구역 선택 | 구현 (Supabase 연동) |
-| 근무 중 | 근무 시간, 광고 슬롯, 이동 경로 기록 | 화면 틀만 있음 |
+| 근무 중 | 근무 시간, 광고 슬롯, 이동 경로 기록 | 일부 구현 (근무 시간, 광고 슬롯) |
 | 가게 체크인 | QR 스캔과 가게 반경 50m 확인 | 화면 틀만 있음 |
 | 근무 종료 | 봉투 수, 종류별 무게, 저울 사진, 예상 수입 입력 | 화면 틀만 있음 |
 | 상인 리포트 | 가게별 월간 지표, 안내받고 온 손님 기록 | 화면 틀만 있음 |
+| QR 랜딩 (시민용 웹) | 홍보물 QR로 들어온 시민에게 가게 안내, 혜택, 청결도 평가 | 미착수 (앱 밖 웹 페이지) |
 
 ## 구조
 
@@ -72,7 +73,7 @@ flowchart LR
 ## 실행 방법
 
 1. Android Studio에서 프로젝트를 엽니다. (compileSdk 37, minSdk 24)
-2. Supabase 프로젝트에 `zones` 테이블을 만듭니다.
+2. Supabase 프로젝트에 `zones`, `ad_slots` 테이블을 만듭니다. 둘 다 읽기만 허용합니다.
    ```sql
    create table public.zones (
      grid_id text primary key,
@@ -82,6 +83,18 @@ flowchart LR
    alter table public.zones enable row level security;
    create policy "zones are readable by everyone"
      on public.zones for select to anon, authenticated using (true);
+
+   -- 근무 중 광고 슬롯. 자정 이후 시각은 24~30으로 적습니다
+   create table public.ad_slots (
+     id bigint generated always as identity primary key,
+     shop_name text not null,
+     start_hour smallint not null check (start_hour between 0 and 29),
+     end_hour smallint not null check (end_hour between 1 and 30 and end_hour > start_hour),
+     placement text not null
+   );
+   alter table public.ad_slots enable row level security;
+   create policy "ad_slots read"
+     on public.ad_slots for select to anon, authenticated using (true);
    ```
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties
@@ -95,8 +108,12 @@ flowchart LR
 
 ## 앞으로 할 일
 
-- [ ] 근무 중 화면: 근무 시간 측정, 위치 기록
+- [x] 근무 중 화면: 근무 시간 측정, 광고 슬롯 표시
+- [ ] 근무 중 화면: 위치 기록, 체크인·봉투 수, 긴급 연락
+- [ ] DB 쓰기를 위한 인증 방식 결정
 - [ ] 가게 체크인: QR 스캔, 가게 반경 확인
 - [ ] 근무 종료: 수거량 입력, 저울 사진 업로드 (Supabase Storage)
 - [ ] 상인 리포트: 월간 지표
+- [ ] 구역 지도: 범례, 구역 카드, 시간대별 추천도
+- [ ] QR 랜딩 웹 (시민용)
 - [ ] 공공데이터 분석 결과로 구역 점수 교체
