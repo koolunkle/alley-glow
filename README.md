@@ -1,0 +1,102 @@
+# 야간 클린 워커 (NightClean)
+
+상권 골목의 야간 청소 인력이 가게 광고를 단 조끼를 입고 거리를 청소하면서, 지나가는 사람들에게 가게를 안내하는 서비스입니다.
+청소 인력의 인건비는 가게 광고비와 서울시의 수거량 보상으로 나눠 부담합니다.
+
+> 2026 서울 야간경제 활성화 해커톤 출품작. 이태원 5개 가게 대상 시범 운영을 준비하고 있습니다.
+
+## 해결하려는 문제
+
+서울시와 자치구는 야간 청결에 돈과 인력을 더 쓰고 있지만, 대응은 쓰레기통과 수거 횟수를 늘리는 데 머물러 있습니다.
+
+- **쓰레기통 딜레마**: 서울 가로쓰레기통은 1995년 7,607대에서 2007년 3,707대로 줄었다가 다시 늘리고 있습니다. 하지만 "없으면 길거리 투기, 만들면 얌체 투기"라는 딜레마가 남아 있습니다. ([서울시](https://news.seoul.go.kr/env/archives/507323), [MBC 2025.2.10](https://imnews.imbc.com/replay/2025/nwdesk/article/6685269_36799.html))
+- **야간 청결이 정책 과제로**: 서울형 야간경제 대책(2026.8)은 야간 유동 인구가 많은 지역에 청결기동대를 투입합니다. 보도 기준 150명입니다. ([내 손안에 서울 2026.8.20](https://mediahub.seoul.go.kr/archives/2019126), [뉴스핌 2026.8.20](https://www.newspim.com/news/view/20260820000601))
+- **수거 횟수 늘리기**: 마포구는 홍대 레드로드의 수거를 주 5일 야간에서 주 7일 주야간으로 늘렸습니다. ([헤럴드경제 미주판 2026.4.21](https://www.heraldk.com/article/2026042113400052188))
+- **처리비 증가**: 2026년부터 수도권 생활폐기물 직매립이 금지되어 자치구의 처리 비용 부담이 커지고 있습니다. ([서울시 2025.12](https://news.seoul.go.kr/env/archives/566522))
+
+이 서비스는 쓰레기통을 늘리는 대신 사람이 골목을 돌며 치우게 합니다. 청소 인력은 걸어 다니는 광고판이 되어, 큰길에서 잘 보이지 않는 골목 안쪽 가게로 손님을 안내합니다. 비용은 광고를 다는 가게와 수거량에 따라 보상하는 시가 나눠 냅니다.
+
+> 야간 상권만 따로 집계한 쓰레기 통계는 공개된 것이 없습니다. 이태원 시범 운영의 실측값과 정보공개 청구 결과로 보완할 예정입니다.
+
+## 주요 화면
+
+| 구역 지도 |
+|---|
+| <img src="docs/screenshots/zone-map.png" width="280" alt="구역 지도 화면"> |
+
+| 화면 | 역할 | 상태 |
+|---|---|---|
+| 구역 지도 | 250m 격자별 배치 추천도를 보고 근무 구역 선택 | 구현 (Supabase 연동) |
+| 근무 중 | 근무 시간, 광고 슬롯, 이동 경로 기록 | 화면 틀만 있음 |
+| 가게 체크인 | QR 스캔과 가게 반경 50m 확인 | 화면 틀만 있음 |
+| 근무 종료 | 봉투 수, 종류별 무게, 저울 사진, 예상 수입 입력 | 화면 틀만 있음 |
+| 상인 리포트 | 가게별 월간 지표, 안내받고 온 손님 기록 | 화면 틀만 있음 |
+
+## 구조
+
+```mermaid
+flowchart LR
+    subgraph UI
+        Route["XxxRoute<br/>(상태 보유)"] --> Screen["XxxScreen<br/>(상태 없음)"]
+        Route --> VM["ViewModel<br/>StateFlow&lt;UiState&gt;"]
+    end
+    subgraph Domain
+        Repo["Repository 인터페이스"]
+        Model["Model"]
+    end
+    subgraph Data
+        Impl["RepositoryImpl<br/>Result 반환"] --> DS["RemoteDataSource<br/>Ktor"]
+        DS --> DTO["DTO"]
+    end
+    VM --> Repo
+    Impl -. 구현 .-> Repo
+    DS --> SB[("Supabase<br/>PostgREST")]
+```
+
+- **화면 분리**: `XxxRoute`는 ViewModel을 받아 상태와 이벤트만 넘기고, `XxxScreen`은 상태를 갖지 않습니다. 그래서 Preview와 UI 테스트는 `XxxScreen`만으로 할 수 있습니다.
+- **UseCase 계층 없음**: 지금은 Repository 호출을 그대로 전달하는 일밖에 없습니다. 여러 Repository를 조합해야 할 때 UseCase를 추가합니다.
+- **오류 처리**: Repository는 Kotlin `Result`를 돌려주고, 코루틴 취소(`CancellationException`)는 잡지 않고 다시 던집니다. 화면에는 예외 원문 대신 고정된 한글 안내 문구를 보여줍니다.
+- **임시 처리 표시**: 의도적으로 단순하게 만든 부분에는 `// shortcut:` 주석으로 한계와 바꿀 시점을 적어 둡니다.
+
+## 기술 스택
+
+| 영역 | 사용 기술 | 선택 이유 |
+|---|---|---|
+| UI | Jetpack Compose, Material 3 | 야간 사용을 위한 다크 테마 하나만 둠 |
+| 화면 이동 | Navigation Compose (type-safe) | 화면 인자를 컴파일 시점에 검사 |
+| 의존성 주입 | Hilt + KSP | ViewModel과 Repository 연결을 표준 방식으로 처리 |
+| 네트워크 | Ktor Client (OkHttp), kotlinx-serialization | 나중에 붙일 공식 Supabase Kotlin 클라이언트(supabase-kt)도 Ktor 기반 |
+| 백엔드 | Supabase (PostgreSQL, RLS) | 별도 서버 없이 테이블 단위로 읽기·쓰기 권한 관리 |
+| 테스트 | JUnit, kotlinx-coroutines-test | ViewModel 상태 변화 검증 |
+
+## 실행 방법
+
+1. Android Studio에서 프로젝트를 엽니다. (compileSdk 37, minSdk 24)
+2. Supabase 프로젝트에 `zones` 테이블을 만듭니다.
+   ```sql
+   create table public.zones (
+     grid_id text primary key,
+     name text not null,
+     score real not null check (score between 0 and 1)
+   );
+   alter table public.zones enable row level security;
+   create policy "zones are readable by everyone"
+     on public.zones for select to anon, authenticated using (true);
+   ```
+3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
+   ```properties
+   supabase.url=https://<project-ref>.supabase.co
+   supabase.key=<publishable key>
+   ```
+4. 빌드하고 테스트합니다.
+   ```bash
+   ./gradlew assembleDebug testDebugUnitTest
+   ```
+
+## 앞으로 할 일
+
+- [ ] 근무 중 화면: 근무 시간 측정, 위치 기록
+- [ ] 가게 체크인: QR 스캔, 가게 반경 확인
+- [ ] 근무 종료: 수거량 입력, 저울 사진 업로드 (Supabase Storage)
+- [ ] 상인 리포트: 월간 지표
+- [ ] 공공데이터 분석 결과로 구역 점수 교체
