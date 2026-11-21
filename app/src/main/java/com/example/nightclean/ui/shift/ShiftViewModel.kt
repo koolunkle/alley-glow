@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,6 +21,10 @@ class ShiftViewModel @Inject constructor(
     /** 근무 시작 시각(epoch ms). 프로세스 재생성 후에도 유지 */
     val startedAt: Long = savedStateHandle.get<Long>(KEY_STARTED_AT)
         ?: System.currentTimeMillis().also { savedStateHandle[KEY_STARTED_AT] = it }
+
+    /** 근무 id. 근무 종료(와 이후 체크인) 기록을 묶고, 재시도 시 중복 저장을 막음 */
+    val shiftId: String = savedStateHandle.get<String>(KEY_SHIFT_ID)
+        ?: UUID.randomUUID().toString().also { savedStateHandle[KEY_SHIFT_ID] = it }
 
     private val _uiState = MutableStateFlow<ShiftUiState>(ShiftUiState.Loading)
     val uiState: StateFlow<ShiftUiState> = _uiState.asStateFlow()
@@ -40,5 +45,6 @@ class ShiftViewModel @Inject constructor(
 
     private companion object {
         const val KEY_STARTED_AT = "startedAt"
+        const val KEY_SHIFT_ID = "shiftId"
     }
 }

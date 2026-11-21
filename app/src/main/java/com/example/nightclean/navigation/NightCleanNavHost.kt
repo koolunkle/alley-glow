@@ -36,10 +36,11 @@ fun NightCleanNavHost() {
             )
         }
         composable<AppRoute.Shift> { entry ->
+            val zoneId = entry.toRoute<AppRoute.Shift>().zoneId
             ShiftRoute(
-                zoneId = entry.toRoute<AppRoute.Shift>().zoneId,
+                zoneId = zoneId,
                 onCheckin = { navController.navigate(AppRoute.Checkin) },
-                onFinish = { navController.navigate(AppRoute.Collection) },
+                onFinish = { shiftId, startedAt -> navController.navigate(AppRoute.Collection(shiftId, zoneId, startedAt)) },
             )
         }
         composable<AppRoute.Checkin> {

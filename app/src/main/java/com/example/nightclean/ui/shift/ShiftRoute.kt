@@ -44,7 +44,7 @@ import java.util.Locale
 fun ShiftRoute(
     zoneId: String,
     onCheckin: () -> Unit,
-    onFinish: () -> Unit,
+    onFinish: (shiftId: String, startedAt: Long) -> Unit,
     viewModel: ShiftViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -61,7 +61,7 @@ fun ShiftRoute(
         now = now,
         onRetry = viewModel::load,
         onCheckin = onCheckin,
-        onFinish = onFinish,
+        onFinish = { onFinish(viewModel.shiftId, viewModel.startedAt) },
     )
 }
 
