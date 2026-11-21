@@ -13,15 +13,16 @@ import javax.inject.Inject
 class ShiftRemoteDataSource @Inject constructor(
     private val client: HttpClient,
 ) {
-    suspend fun insertShift(shift: ShiftDto) = insertIgnoringDuplicate("shifts", shift)
+    /** 체크인 때 종료 시각 없이 만들어진 근무 행이 있으면 갱신(upsert) */
+    suspend fun upsertShift(shift: ShiftDto) = insert("shifts", shift, onConflict = "merge-duplicates")
 
-    suspend fun insertCollection(collection: CollectionDto) = insertIgnoringDuplicate("collections", collection)
+    /** 이미 있으면 건너뜀. 재시도해도 안전 */
+    suspend fun insertCollection(collection: CollectionDto) = insert("collections", collection, onConflict = "ignore-duplicates")
 
-    /** 기본키가 이미 있으면 건너뜀(ON CONFLICT DO NOTHING). 재시도해도 안전 */
-    private suspend inline fun <reified T : Any> insertIgnoringDuplicate(table: String, row: T) {
+    private suspend inline fun <reified T : Any> insert(table: String, row: T, onConflict: String) {
         client.post(table) {
             contentType(ContentType.Application.Json)
-            header("Prefer", "resolution=ignore-duplicates,return=minimal")
+            header("Prefer", "resolution=$onConflict,return=minimal")
             setBody(row)
         }
     }

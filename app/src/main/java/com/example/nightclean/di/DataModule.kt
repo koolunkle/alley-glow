@@ -2,6 +2,10 @@ package com.example.nightclean.di
 
 import com.example.nightclean.data.repository.AdSlotRepositoryImpl
 import com.example.nightclean.data.repository.AuthRepositoryImpl
+import com.example.nightclean.data.repository.CheckinRepositoryImpl
+import com.example.nightclean.data.repository.LocationRepositoryImpl
+import com.example.nightclean.domain.repository.CheckinRepository
+import com.example.nightclean.domain.repository.LocationRepository
 import com.example.nightclean.data.repository.ShiftRepositoryImpl
 import com.example.nightclean.domain.repository.ShiftRepository
 import com.example.nightclean.domain.repository.AuthRepository
@@ -33,4 +37,12 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindShiftRepository(impl: ShiftRepositoryImpl): ShiftRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCheckinRepository(impl: CheckinRepositoryImpl): CheckinRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocationRepository(impl: LocationRepositoryImpl): LocationRepository
 }

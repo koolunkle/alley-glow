@@ -14,7 +14,7 @@ class ShiftRepositoryImpl @Inject constructor(
 
     // collections가 shifts를 참조하므로 근무 먼저 저장
     override suspend fun finishShift(record: ShiftRecord): Result<Unit> = try {
-        remote.insertShift(record.toShiftDto())
+        remote.upsertShift(record.toShiftDto())
         remote.insertCollection(record.toCollectionDto())
         Result.success(Unit)
     } catch (e: CancellationException) {

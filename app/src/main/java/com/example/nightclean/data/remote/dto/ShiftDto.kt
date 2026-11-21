@@ -45,7 +45,7 @@ fun ShiftRecord.toCollectionDto() = CollectionDto(
 )
 
 /** minSdk 24라 java.time 대신 SimpleDateFormat */
-private fun Long.toIsoUtc(): String =
+internal fun Long.toIsoUtc(): String =
     SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
         .apply { timeZone = TimeZone.getTimeZone("UTC") }
         .format(Date(this))

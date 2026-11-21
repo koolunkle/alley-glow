@@ -43,7 +43,7 @@ import java.util.Locale
 @Composable
 fun ShiftRoute(
     zoneId: String,
-    onCheckin: () -> Unit,
+    onCheckin: (shiftId: String, startedAt: Long) -> Unit,
     onFinish: (shiftId: String, startedAt: Long) -> Unit,
     viewModel: ShiftViewModel = hiltViewModel(),
 ) {
@@ -60,7 +60,7 @@ fun ShiftRoute(
         startedAt = viewModel.startedAt,
         now = now,
         onRetry = viewModel::load,
-        onCheckin = onCheckin,
+        onCheckin = { onCheckin(viewModel.shiftId, viewModel.startedAt) },
         onFinish = { onFinish(viewModel.shiftId, viewModel.startedAt) },
     )
 }
