@@ -38,7 +38,7 @@ import com.example.nightclean.ui.theme.NightCleanTheme
 @Composable
 fun ZoneMapRoute(
     onStartShift: (zoneId: String) -> Unit,
-    onOpenShopReport: () -> Unit,
+    onSignOut: () -> Unit,
     viewModel: ZoneMapViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,7 +47,7 @@ fun ZoneMapRoute(
         onSelectZone = viewModel::selectZone,
         onRetry = viewModel::load,
         onStartShift = onStartShift,
-        onOpenShopReport = onOpenShopReport,
+        onSignOut = onSignOut,
     )
 }
 
@@ -58,7 +58,7 @@ fun ZoneMapScreen(
     onSelectZone: (String) -> Unit,
     onRetry: () -> Unit,
     onStartShift: (String) -> Unit,
-    onOpenShopReport: () -> Unit,
+    onSignOut: () -> Unit,
 ) {
     Scaffold { padding ->
         Column(
@@ -87,7 +87,7 @@ fun ZoneMapScreen(
                     } ?: Text("격자를 눌러 근무할 구역을 고르세요", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            TextButton(onClick = onOpenShopReport) { Text("상인 리포트 보기") }
+            TextButton(onClick = onSignOut) { Text("로그아웃") }
         }
     }
 }
@@ -124,7 +124,7 @@ private fun ZoneMapScreenPreview() {
                 zones = List(36) { Zone(id = "G$it", name = "격자 ${it + 1}", score = (it % 5) / 4f) },
                 selectedZoneId = "G14",
             ),
-            onSelectZone = {}, onRetry = {}, onStartShift = {}, onOpenShopReport = {},
+            onSelectZone = {}, onRetry = {}, onStartShift = {}, onSignOut = {},
         )
     }
 }

@@ -9,13 +9,13 @@ import com.example.nightclean.ui.common.PlaceholderScreen
 
 // TODO: ShopReportViewModel 추가 (월간 지표, 암호 손님 +1 기록)
 @Composable
-fun ShopReportRoute(onBack: () -> Unit) {
-    ShopReportScreen(onBack = onBack)
+fun ShopReportRoute(onSignOut: () -> Unit) {
+    ShopReportScreen(onSignOut = onSignOut)
 }
 
 @Composable
-fun ShopReportScreen(onBack: () -> Unit) {
+fun ShopReportScreen(onSignOut: () -> Unit) {
     PlaceholderScreen(title = "상인 리포트", description = "청소한 밤, 광고 노출, 수거량, QR 스캔, 암호 손님 수가 들어갈 자리") {
-        OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("돌아가기") }
+        OutlinedButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) { Text("로그아웃") }
     }
 }
