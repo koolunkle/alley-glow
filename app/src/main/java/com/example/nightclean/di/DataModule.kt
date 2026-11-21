@@ -1,6 +1,8 @@
 package com.example.nightclean.di
 
+import com.example.nightclean.data.repository.AdSlotRepositoryImpl
 import com.example.nightclean.data.repository.ZoneRepositoryImpl
+import com.example.nightclean.domain.repository.AdSlotRepository
 import com.example.nightclean.domain.repository.ZoneRepository
 import dagger.Binds
 import dagger.Module
@@ -15,4 +17,8 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindZoneRepository(impl: ZoneRepositoryImpl): ZoneRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAdSlotRepository(impl: AdSlotRepositoryImpl): AdSlotRepository
 }
