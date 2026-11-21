@@ -26,6 +26,7 @@
 
 | 화면 | 역할 | 상태 |
 |---|---|---|
+| 로그인 | 운영자가 발급한 계정으로 로그인, 워커·상인 역할별 첫 화면 | 구현 (Supabase Auth) |
 | 구역 지도 | 250m 격자별 배치 추천도를 보고 근무 구역 선택 | 구현 (Supabase 연동) |
 | 근무 중 | 근무 시간, 광고 슬롯, 이동 경로 기록 | 일부 구현 (근무 시간, 광고 슬롯) |
 | 가게 체크인 | QR 스캔과 가게 반경 50m 확인 | 화면 틀만 있음 |
@@ -67,6 +68,7 @@ flowchart LR
 | 화면 이동 | Navigation Compose (type-safe) | 화면 인자를 컴파일 시점에 검사 |
 | 의존성 주입 | Hilt + KSP | ViewModel과 Repository 연결을 표준 방식으로 처리 |
 | 네트워크 | Ktor Client (OkHttp), kotlinx-serialization | 나중에 붙일 공식 Supabase Kotlin 클라이언트(supabase-kt)도 Ktor 기반 |
+| 인증 | Supabase Auth (supabase-kt) | 세션 저장과 토큰 갱신을 라이브러리에 맡김 |
 | 백엔드 | Supabase (PostgreSQL, RLS) | 별도 서버 없이 테이블 단위로 읽기·쓰기 권한 관리 |
 | 테스트 | JUnit, kotlinx-coroutines-test | ViewModel 상태 변화 검증 |
 
@@ -95,7 +97,18 @@ flowchart LR
    alter table public.ad_slots enable row level security;
    create policy "ad_slots read"
      on public.ad_slots for select to anon, authenticated using (true);
+
+   -- 사용자 역할. 회원가입 없이 대시보드에서 계정을 만들고 여기에 역할을 넣습니다
+   create table public.profiles (
+     user_id uuid primary key references auth.users (id) on delete cascade,
+     role text not null check (role in ('worker', 'shop')),
+     display_name text not null
+   );
+   alter table public.profiles enable row level security;
+   create policy "profiles read own"
+     on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
    ```
+   Authentication 설정에서 공개 가입을 끄고, Users에서 워커·상인 계정을 만든 뒤 `profiles`에 역할을 넣습니다.
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties
    supabase.url=https://<project-ref>.supabase.co
@@ -110,7 +123,7 @@ flowchart LR
 
 - [x] 근무 중 화면: 근무 시간 측정, 광고 슬롯 표시
 - [ ] 근무 중 화면: 위치 기록, 체크인·봉투 수, 긴급 연락
-- [ ] DB 쓰기를 위한 인증 방식 결정
+- [x] 로그인과 역할 구분 (데모 계정, 회원가입 없음)
 - [ ] 가게 체크인: QR 스캔, 가게 반경 확인
 - [ ] 근무 종료: 수거량 입력, 저울 사진 업로드 (Supabase Storage)
 - [ ] 상인 리포트: 월간 지표
