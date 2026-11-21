@@ -7,6 +7,7 @@
 - `public.zones(grid_id text pk, name text, score real 0~1)`: RLS로 anon/authenticated 읽기만 허용. 지금 값은 예시 점수 36칸이고, 공공데이터 분석 결과로 갈아 끼운다.
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement)`: 근무 중 광고 슬롯. 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name)`: 본인 행만 읽기(`auth.uid()`). 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
+- `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], general_kg, recycle_kg, butts_g, note)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다.
 - 쓰기가 필요한 테이블은 `authenticated` + `auth.uid()` 기준 RLS로 연다. anon 쓰기는 열지 않는다(시민 QR 웹 제외).
 - 접속 정보는 `local.properties`의 `supabase.url`, `supabase.key`(publishable key)에서 BuildConfig로 들어간다. git에 올리지 않는다.
 
@@ -29,7 +30,7 @@
 | 1. 구역 추천 지도 | ZoneMap | 36칸 격자(zones), 구역 선택, 근무 시작 | 시간대 칩(시간대별 점수 필요), 범례, 구역 카드(태그·시간대), 워커 이름, 이태원역 표시 |
 | 2. 근무 중 | Shift | 근무 시간 타이머, 현재·다음 광고 슬롯(ad_slots) | GPS 기록, 체크인 수, 봉투 수, 긴급 연락 |
 | 3. 가게 체크인 | Checkin | 없음(임시 화면) | QR 스캔, 가게 50m 반경 확인, 이번 슬롯 체크인 목록 |
-| 4. 근무 종료·수거량 입력 | Collection | 없음(임시 화면) | 봉투 수, 종류별 무게, 저울·전후 사진, 예상 수입 |
+| 4. 근무 종료·수거량 입력 | Collection | 시간대별 봉투 수, 종류별 무게, 특이사항, 예상 수입(시급·꽁초 보상), shifts·collections 저장 | 저울·전후 사진(Storage) |
 | 5. 상인 리포트 | ShopReport | 없음(임시 화면) | 월간 지표, "+1 기록", 최근 청소 기록 |
 | 6. QR 랜딩 웹(시민) | 없음 | 없음 | 앱이 아닌 웹 페이지. 이 저장소에서 만들지 미정 |
 

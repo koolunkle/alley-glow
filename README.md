@@ -30,7 +30,7 @@
 | 구역 지도 | 250m 격자별 배치 추천도를 보고 근무 구역 선택 | 구현 (Supabase 연동) |
 | 근무 중 | 근무 시간, 광고 슬롯, 이동 경로 기록 | 일부 구현 (근무 시간, 광고 슬롯) |
 | 가게 체크인 | QR 스캔과 가게 반경 50m 확인 | 화면 틀만 있음 |
-| 근무 종료 | 봉투 수, 종류별 무게, 저울 사진, 예상 수입 입력 | 화면 틀만 있음 |
+| 근무 종료 | 봉투 수, 종류별 무게, 저울 사진, 예상 수입 입력 | 일부 구현 (사진 제외, Supabase 저장) |
 | 상인 리포트 | 가게별 월간 지표, 안내받고 온 손님 기록 | 화면 틀만 있음 |
 | QR 랜딩 (시민용 웹) | 홍보물 QR로 들어온 시민에게 가게 안내, 혜택, 청결도 평가 | 미착수 (앱 밖 웹 페이지) |
 
@@ -108,6 +108,7 @@ flowchart LR
    create policy "profiles read own"
      on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
    ```
+   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에 있습니다.
    Authentication 설정에서 공개 가입을 끄고, Users에서 워커·상인 계정을 만든 뒤 `profiles`에 역할을 넣습니다.
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties
@@ -125,7 +126,8 @@ flowchart LR
 - [ ] 근무 중 화면: 위치 기록, 체크인·봉투 수, 긴급 연락
 - [x] 로그인과 역할 구분 (데모 계정, 회원가입 없음)
 - [ ] 가게 체크인: QR 스캔, 가게 반경 확인
-- [ ] 근무 종료: 수거량 입력, 저울 사진 업로드 (Supabase Storage)
+- [x] 근무 종료: 수거량 입력, 예상 수입, 저장
+- [ ] 근무 종료: 저울·전후 사진 업로드 (Supabase Storage)
 - [ ] 상인 리포트: 월간 지표
 - [ ] 구역 지도: 범례, 구역 카드, 시간대별 추천도
 - [ ] QR 랜딩 웹 (시민용)
