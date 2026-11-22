@@ -94,5 +94,6 @@
 ## 빌드·실행
 - `./gradlew.bat assembleDebug testDebugUnitTest`
 - 기기 설치: `./gradlew.bat installDebug`
+- 배포 APK: `./gradlew.bat assembleRelease` → `app/build/outputs/apk/release/app-release.apk`. 서명은 `local.properties`의 `release.storeFile`·`release.storePassword`(별칭 `nightclean`, 키스토어는 저장소 밖 `~/.android/`, 분실하면 같은 앱으로 업데이트 불가). R8은 꺼 둠(켜면 시작 즉시 `IllegalAccessError`). GitHub Release에 `night-clean.apk` 이름으로 올리면 README 링크(`releases/latest/download/night-clean.apk`)가 최신을 가리킨다. debug와 서명이 달라 기기에서 바꿔 설치하려면 먼저 지워야 한다(로그인 풀림).
 - 실행: `adb shell am start -n com.example.nightclean/.MainActivity`
 - 개인 링크, Supabase 프로젝트 id, 기기 정보는 `CLAUDE.local.md`(git 제외)에 둔다.

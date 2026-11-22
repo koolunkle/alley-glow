@@ -5,6 +5,14 @@
 
 > 2026 서울 야간경제 활성화 해커톤 출품작. 이태원 5개 가게 대상 시범 운영을 준비하고 있습니다.
 
+## 내려받기
+
+[Android APK 내려받기](https://github.com/koolunkle/night-clean/releases/latest/download/night-clean.apk) (Android 7.0 이상)
+
+- 회원가입이 없어 운영자가 발급한 계정으로 로그인합니다. 심사용 데모 계정(워커·상인)은 본선 현장에서 드립니다.
+- Play 스토어 앱이 아니라서 설치할 때 '출처를 알 수 없는 앱' 허용이 필요합니다.
+- 시민용 QR 랜딩은 설치 없이 웹으로 열립니다.
+
 ## 해결하려는 문제
 
 서울시와 자치구는 야간 청결에 돈과 인력을 더 쓰고 있지만, 대응은 쓰레기통과 수거 횟수를 늘리는 데 머물러 있습니다.
@@ -123,6 +131,11 @@ flowchart LR
    ```bash
    ./gradlew assembleDebug testDebugUnitTest
    ```
+5. (선택) 서명한 release APK. 키스토어를 만들고 `local.properties`에 경로와 비밀번호(별칭 `nightclean`, 키 비밀번호도 같게)를 적으면 `assembleRelease`가 서명합니다. 없으면 서명 없이 빌드됩니다.
+   ```properties
+   release.storeFile=<키스토어 경로>
+   release.storePassword=<비밀번호>
+   ```
 
 ## 앞으로 할 일
 
@@ -130,10 +143,10 @@ flowchart LR
 
 **P0: 마감과 대회 요건**
 - [ ] 운영팀에 사전 개발 허용 여부 문의 (규칙은 개발을 '본선 무박 2일' 활동으로 적음)
-- [ ] 기획안용 화면 캡처, README 스크린샷 갱신 (앱 5개 화면 + QR 랜딩)
+- [x] 기획안용 화면 캡처, README 스크린샷 갱신 (앱 5개 화면 + QR 랜딩)
 
 **P1: 본선 시연**
-- [ ] 서명한 release APK와 내려받기 링크 (심사위원이 직접 사용)
+- [x] 서명한 release APK와 내려받기 링크 (심사위원이 직접 사용)
 - [ ] 시연 동선 리허설("배정 확인 → 근무 → 상인 리포트" 3분), 시연용 예시에 청소 전후 사진 보강
 - [ ] 구역 지도: 워커 이름, 시간대별 추천도 칩
 
