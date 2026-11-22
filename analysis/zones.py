@@ -4,7 +4,7 @@
 - 야간 인구: 서울 생활인구(250m 격자), 금·토 19~23시(시간 19·20·21·22) 평균
 - 휴지통 공백: 칸 중심에서 가장 가까운 가로휴지통까지 거리(geocode_bins.py 결과)
 - 야간 매출: 상권 추정매출 21~24시(2025년 분기 평균)를 상권 영역과 겹친 면적 비율로 나눔
-결과: data/zones_itaewon.csv
+결과: data/zones_itaewon.csv, data/pop_hourly_itaewon.csv(36칸 합계, 시간대별 금·토·평일 평균)
 """
 import csv
 import glob
@@ -19,6 +19,7 @@ from geo import CENTRAL, UTMK, from_tm, grid_origin, inside, read_shapefile, to_
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "zones_itaewon.csv"
+OUT_HOURLY = ROOT / "data" / "pop_hourly_itaewon.csv"
 
 STATION = (37.5345, 126.9944)  # 이태원역
 CELL, COLS, ROWS = 250, 6, 6
@@ -167,7 +168,15 @@ def main():
         for c in cells:
             w.writerow([round(c[k], 4 if k in ("pop_n", "bin_gap_n", "sales_n", "score") else 6 if k in ("lat", "lng") else 1)
                         if isinstance(c.get(k), float) else c.get(k, "") for k in cols])
-    print(f"{OUT.name} 저장")
+    with OUT_HOURLY.open("w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["hour", "weekend", "weekday"])
+        for h in range(24):
+            hh = f"{h:02d}"
+            def avg(ds):
+                return sum(c["hourly"].get((d, hh), 0.0) for c in cells for d in ds) / len(ds)
+            w.writerow([h, round(avg(WEEKEND)), round(avg(WEEKDAY))])
+    print(f"{OUT.name}, {OUT_HOURLY.name} 저장")
 
 
 if __name__ == "__main__":
