@@ -18,3 +18,6 @@ CLAUDE.local.md
 
 # QR 랜딩 웹 접속 정보(배포는 GitHub Secrets)
 web/config.js
+
+# 공공데이터 원본(생활인구는 원본 재배포 금지. 공개 저장소에 올리지 않음)
+data/raw/
