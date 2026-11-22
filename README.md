@@ -32,7 +32,7 @@
 | 가게 체크인 | QR 스캔과 가게 반경 50m 확인 | 구현 (서버에서 거리 판정) |
 | 근무 종료 | 봉투 수, 사진, 청소 후 사진, 무게(저울이 있을 때만), 예상 수입 입력 | 구현 |
 | 상인 리포트 | 가게별 월간 지표, 안내받고 온 손님 기록, 청소 전후 사진 | 일부 구현 (광고 노출·QR 스캔 수 제외) |
-| QR 랜딩 (시민용 웹) | 홍보물 QR로 들어온 시민에게 가게 안내, 혜택, 청결도 평가 | 미착수 (앱 밖 웹 페이지) |
+| QR 랜딩 (시민용 웹) | 홍보물 QR로 들어온 시민에게 가게 안내, 혜택, 청결도 평가 | 구현 (`web/`, GitHub Pages) |
 
 ## 구조
 
@@ -108,7 +108,7 @@ flowchart LR
    create policy "profiles read own"
      on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
    ```
-   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에, 가게·체크인 테이블과 `check_in` 함수는 `create_shops_checkins`에, 상인 가게 연결과 손님 기록, `shop_report` 함수는 `create_shop_report`에, 사진 Storage 버킷과 권한은 `create_collection_photos`에, 무게 선택 입력은 `collections_weight_optional`에, 청소 전후 사진 경로는 `collections_before_after_photos`에, 상인의 사진 읽기 권한은 `shop_report_before_after_photos`와 `move_shop_photo_check_private`에, GPS 기록 테이블은 `create_track_points`에 있습니다.
+   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에, 가게·체크인 테이블과 `check_in` 함수는 `create_shops_checkins`에, 상인 가게 연결과 손님 기록, `shop_report` 함수는 `create_shop_report`에, 사진 Storage 버킷과 권한은 `create_collection_photos`에, 무게 선택 입력은 `collections_weight_optional`에, 청소 전후 사진 경로는 `collections_before_after_photos`에, 상인의 사진 읽기 권한은 `shop_report_before_after_photos`와 `move_shop_photo_check_private`에, GPS 기록 테이블은 `create_track_points`에, QR 랜딩의 스캔·평가와 함수는 `create_qr_landing`에 있습니다.
    Authentication 설정에서 공개 가입을 끄고, Users에서 워커·상인 계정을 만든 뒤 `profiles`에 역할을 넣습니다.
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties
@@ -135,7 +135,7 @@ flowchart LR
 - [x] 청소 전후 사진 (선택, 각 2장)
 - [x] 상인 리포트에 청소 전후 사진 표시
 - [x] 상인 리포트: 청소한 밤, 수거량, 손님 +1 기록, 최근 청소 기록
-- [ ] 상인 리포트: 광고 노출 시간, QR 스캔 수
+- [ ] 상인 리포트: 광고 노출 시간
 - [ ] 구역 지도: 범례, 구역 카드, 시간대별 추천도
-- [ ] QR 랜딩 웹 (시민용)
+- [x] QR 랜딩 웹 (시민용), 상인 리포트의 QR 스캔 수·청결도
 - [ ] 공공데이터 분석 결과로 구역 점수 교체
