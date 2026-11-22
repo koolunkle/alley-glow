@@ -36,6 +36,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.UserRole
 import com.example.nightclean.R
+import com.example.nightclean.ui.common.InlineNotice
 import com.example.nightclean.ui.theme.NightCleanTheme
 
 @Composable
@@ -105,7 +106,7 @@ fun LoginScreen(
                     LoginError.UNREGISTERED -> R.string.login_error_unregistered
                     LoginError.FAILED -> R.string.login_error_failed
                 }
-                Text(stringResource(message), color = MaterialTheme.colorScheme.error)
+                InlineNotice(stringResource(message))
             }
             Button(
                 onClick = onSubmit,
