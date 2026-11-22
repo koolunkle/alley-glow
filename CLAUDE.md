@@ -93,7 +93,7 @@
 ## QR 랜딩 웹
 - 정적 HTML 1장(`web/index.html`), 라이브러리 없음(글꼴만 jsDelivr의 Pretendard 1.3.9 CSS, 못 받으면 시스템 글꼴). 가게 정보는 `textContent`로만 넣는다. 한글은 `word-break: keep-all`.
 - 화면 확인은 DB에 스캔이 남지 않게 가짜 `config.js`(fetch를 가로채 예시 가게를 돌려줌)를 둔 사본으로 한다. 헤드리스 Chrome은 창이 500px보다 좁아지지 않으니 390px iframe에 넣어 캡처한다.
-- Supabase 접속 정보는 `web/config.js`(git 제외, 예시는 `config.example.js`). 배포는 `main`에 `web/`가 바뀌면 GitHub Actions가 Secrets(`SUPABASE_URL`, `SUPABASE_KEY`)로 `config.js`를 만들어 Pages에 올린다.
+- Supabase 접속 정보는 `web/config.js`(git 제외, 예시는 `config.example.js`). 배포는 `main`에 `web/`가 바뀌면 GitHub Actions가 Secrets(`SUPABASE_URL`, `SUPABASE_KEY`)로 `config.js`를 만들어 Pages에 올린다. 워크플로는 build(업로드)와 deploy(배포) job으로 나눠 둔다. 한 job에서 이어 하면 방금 올린 아티팩트를 API가 못 찾아 실패할 때가 있었다.
 - 로컬 확인: `web/config.js`를 만든 뒤 `web/index.html?s=NC-SHOP-001`을 브라우저로 연다.
 - 인쇄용 QR: `web/print.html`(배포 주소의 `print.html`). shops 전체를 읽어 가게마다 랜딩 주소 QR(한 변 10cm, 오류 정정 Q)과 캠페인 문구 카드를 A4에 2장씩. QR 생성은 cdnjs의 qrcodejs 1.0.0.
 - 저장소는 Pages 배포를 위해 공개한다. 커밋 작성자 이메일은 GitHub noreply 주소를 쓴다(저장소 로컬 `user.email`).
