@@ -6,9 +6,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -20,8 +22,11 @@ class ShopReportViewModelTest {
     private class FakeReports(
         val report: Result<ShopReport?>,
         val add: Result<Unit> = Result.success(Unit),
+        val photo: Result<ByteArray> = Result.success(byteArrayOf(1, 2, 3)),
     ) : ShopReportRepository {
         var added = 0
+        var photoCalls = 0
+        override suspend fun getPhoto(path: String) = photo.also { photoCalls++ }
         override suspend fun getReport() = report
         override suspend fun addGuest(shopId: Long) = add.also { if (it.isSuccess) added++ }
     }
@@ -56,6 +61,21 @@ class ShopReportViewModelTest {
         val state = vm.uiState.value as ShopReportUiState.Success
         assertEquals(3, state.report.guests)
         assertEquals("손님을 기록하지 못했어요. 다시 눌러 주세요.", state.message)
+    }
+
+    @Test
+    fun `청소 사진은 한 번만 내려받고 다시 쓴다`() = runTest {
+        val repo = FakeReports(Result.success(report))
+        val vm = ShopReportViewModel(repo)
+        assertEquals(3, vm.loadPhoto("p")?.size)
+        vm.loadPhoto("p")
+        assertEquals(1, repo.photoCalls)
+    }
+
+    @Test
+    fun `청소 사진을 못 받으면 null이다`() = runTest {
+        val vm = ShopReportViewModel(FakeReports(Result.success(report), photo = Result.failure(IllegalStateException())))
+        assertNull(vm.loadPhoto("p"))
     }
 
     @Test

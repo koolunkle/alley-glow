@@ -23,6 +23,8 @@ data class NightRecordDto(
     val checkins: Int,
     @SerialName("first_at") val firstAt: String,
     @SerialName("last_at") val lastAt: String,
+    @SerialName("before_photo") val beforePhoto: String? = null,
+    @SerialName("after_photo") val afterPhoto: String? = null,
 )
 
 /** `guest_visits` 삽입 행 */
@@ -36,5 +38,5 @@ fun ShopReportDto.toShopReport() = ShopReport(
     nights = nights,
     collectedKg = collectedKg,
     guests = guests,
-    recent = recent.map { NightRecord(it.night, it.checkins, it.firstAt, it.lastAt) },
+    recent = recent.map { NightRecord(it.night, it.checkins, it.firstAt, it.lastAt, it.beforePhoto, it.afterPhoto) },
 )

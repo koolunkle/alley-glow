@@ -8,4 +8,7 @@ interface ShopReportRepository {
 
     /** "클린 보고 왔어요" 손님 1명 기록 */
     suspend fun addGuest(shopId: Long): Result<Unit>
+
+    /** 리포트의 청소 전후 사진(JPEG). 이 가게에 체크인한 근무의 사진만 읽을 수 있음 */
+    suspend fun getPhoto(path: String): Result<ByteArray>
 }

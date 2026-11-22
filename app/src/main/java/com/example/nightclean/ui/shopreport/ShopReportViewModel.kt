@@ -32,6 +32,13 @@ class ShopReportViewModel @Inject constructor(
         }
     }
 
+    // 화면을 다시 그릴 때마다 내려받지 않게 기억(리포트 사진은 최대 10장)
+    private val photoCache = mutableMapOf<String, ByteArray>()
+
+    /** 청소 전후 사진. 못 받으면 null(썸네일 자리만 비워 둠) */
+    suspend fun loadPhoto(path: String): ByteArray? =
+        photoCache[path] ?: repository.getPhoto(path).getOrNull()?.also { photoCache[path] = it }
+
     /** 저장에 성공했을 때만 숫자를 올림(중복 탭은 무시) */
     fun addGuest() {
         val state = _uiState.value as? ShopReportUiState.Success ?: return

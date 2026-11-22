@@ -6,6 +6,8 @@ import com.example.nightclean.image.decodeUpright
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -34,6 +36,10 @@ class PhotoRemoteDataSource @Inject constructor(
         }
         return path
     }
+
+    /** 비공개 버킷에서 로그인 토큰으로 내려받음. 읽기 권한은 Storage 정책이 판정 */
+    suspend fun download(path: String): ByteArray =
+        client.get("${BuildConfig.SUPABASE_URL}/storage/v1/object/authenticated/$BUCKET/$path").body()
 
     private companion object {
         const val BUCKET = "collection-photos"

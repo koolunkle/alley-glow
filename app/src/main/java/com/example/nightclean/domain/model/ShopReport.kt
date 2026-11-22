@@ -13,5 +13,12 @@ data class ShopReport(
     val recent: List<NightRecord>,
 )
 
-/** night: yyyy-MM-dd, firstAt·lastAt: HH:mm */
-data class NightRecord(val night: String, val checkins: Int, val firstAt: String, val lastAt: String)
+/** night: yyyy-MM-dd, firstAt·lastAt: HH:mm. 사진은 Storage 경로(그 밤 청소 전·후 1장씩, 없으면 null) */
+data class NightRecord(
+    val night: String,
+    val checkins: Int,
+    val firstAt: String,
+    val lastAt: String,
+    val beforePhoto: String? = null,
+    val afterPhoto: String? = null,
+)

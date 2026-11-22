@@ -1,5 +1,7 @@
 package com.example.nightclean.ui.shopreport
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,8 +24,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,6 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.NightRecord
 import com.example.nightclean.domain.model.ShopReport
 import com.example.nightclean.ui.theme.NightCleanTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -46,6 +55,7 @@ fun ShopReportRoute(
         onAddGuest = viewModel::addGuest,
         onRetry = viewModel::load,
         onSignOut = onSignOut,
+        loadPhoto = viewModel::loadPhoto,
     )
 }
 
@@ -55,6 +65,8 @@ fun ShopReportScreen(
     onAddGuest: () -> Unit,
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
+    /** 청소 전후 사진(JPEG 바이트). 미리보기에서는 null을 돌려줌 */
+    loadPhoto: suspend (path: String) -> ByteArray?,
 ) {
     Scaffold { padding ->
         Column(
@@ -74,7 +86,7 @@ fun ShopReportScreen(
                     Text(uiState.message)
                     Button(onClick = onRetry) { Text("다시 시도") }
                 }
-                is ShopReportUiState.Success -> Report(uiState, onAddGuest)
+                is ShopReportUiState.Success -> Report(uiState, onAddGuest, loadPhoto)
             }
             TextButton(onClick = onSignOut) { Text("로그아웃") }
         }
@@ -82,7 +94,7 @@ fun ShopReportScreen(
 }
 
 @Composable
-private fun Report(uiState: ShopReportUiState.Success, onAddGuest: () -> Unit) {
+private fun Report(uiState: ShopReportUiState.Success, onAddGuest: () -> Unit, loadPhoto: suspend (String) -> ByteArray?) {
     val report = uiState.report
     Column {
         Text("${report.shopName} 사장님", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -136,7 +148,7 @@ private fun Report(uiState: ShopReportUiState.Success, onAddGuest: () -> Unit) {
     if (report.recent.isEmpty()) {
         Text("아직 청소 기록이 없어요", color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-    report.recent.forEach { NightRow(it) }
+    report.recent.forEach { NightRow(it, loadPhoto) }
 }
 
 @Composable
@@ -153,19 +165,53 @@ private fun Metric(label: String, value: String, caption: String, modifier: Modi
 }
 
 @Composable
-private fun NightRow(night: NightRecord) {
+private fun NightRow(night: NightRecord, loadPhoto: suspend (String) -> ByteArray?) {
     val time = if (night.firstAt == night.lastAt) night.firstAt else "${night.firstAt}–${night.lastAt}"
-    Column(
+    Row(
         Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("${formatNight(night.night)} $time", fontWeight = FontWeight.Bold)
+        // 시안처럼 전·후 썸네일. 사진이 없는 밤은 생략
+        if (night.beforePhoto != null || night.afterPhoto != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                NightPhoto(night.beforePhoto, "전", loadPhoto)
+                NightPhoto(night.afterPhoto, "후", loadPhoto)
+            }
+        }
+        Column {
+            Text("${formatNight(night.night)} $time", fontWeight = FontWeight.Bold)
+            Text(
+                "가게 앞 체크인 ${night.checkins}회",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** 52dp 썸네일. 원본(긴 변 1600px, 업로드 때 방향 보정됨)을 작게 디코딩 */
+@Composable
+private fun NightPhoto(path: String?, label: String, loadPhoto: suspend (String) -> ByteArray?) {
+    val image by produceState<ImageBitmap?>(null, path) {
+        val bytes = path?.let { loadPhoto(it) } ?: return@produceState
+        value = withContext(Dispatchers.Default) {
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = 8 })?.asImageBitmap()
+        }
+    }
+    Box(
+        Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        image?.let { Image(it, contentDescription = "청소 $label 사진", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
         Text(
-            "가게 앞 체크인 ${night.checkins}회",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)).padding(horizontal = 4.dp),
         )
     }
 }
@@ -189,12 +235,12 @@ private fun ShopReportScreenPreview() {
                 ShopReport(
                     shopId = 1, shopName = "[가게명]", month = 11, nights = 4, collectedKg = 38.5, guests = 7,
                     recent = listOf(
-                        NightRecord("2026-11-29", 3, "19:12", "22:40"),
+                        NightRecord("2026-11-29", 3, "19:12", "22:40", beforePhoto = "b", afterPhoto = "a"),
                         NightRecord("2026-11-28", 2, "20:05", "21:30"),
                     ),
                 ),
             ),
-            onAddGuest = {}, onRetry = {}, onSignOut = {},
+            onAddGuest = {}, onRetry = {}, onSignOut = {}, loadPhoto = { null },
         )
     }
 }
