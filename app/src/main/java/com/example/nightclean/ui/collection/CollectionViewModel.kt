@@ -50,10 +50,8 @@ class CollectionViewModel @Inject constructor(
 
     fun changeGeneralKg(value: String) = edit { it.copy(generalKg = value) }
     fun changeRecycleKg(value: String) = edit { it.copy(recycleKg = value) }
-    fun changeButtsG(value: String) = edit { it.copy(buttsG = value) }
     fun changeNote(value: String) = edit { it.copy(note = value.take(MAX_NOTE)) }
 
-    fun setWeighed(weighed: Boolean) = edit { it.copy(weighed = weighed) }
 
     fun addPhoto(path: String) = edit { form ->
         if (form.photos.size < MAX_PHOTOS) form.copy(photos = form.photos + path) else form
@@ -72,20 +70,19 @@ class CollectionViewModel @Inject constructor(
         if (state.isSubmitting) return
         val form = state.form
         val weight = if (form.weighed) {
-            val generalKg = form.generalKg.toWeight(MAX_KG)
-            val recycleKg = form.recycleKg.toWeight(MAX_KG)
-            val buttsG = form.buttsG.toWeight(MAX_G)
-            if (generalKg == null || recycleKg == null || buttsG == null) {
-                _uiState.value = state.copy(error = "무게를 숫자로 입력해 주세요. 없으면 0을 적어 주세요.")
+            val generalKg = form.generalKg.ifBlank { "0" }.toWeight(MAX_KG)
+            val recycleKg = form.recycleKg.ifBlank { "0" }.toWeight(MAX_KG)
+            if (generalKg == null || recycleKg == null) {
+                _uiState.value = state.copy(error = CollectionError.WEIGHT)
                 return
             }
-            Weight(generalKg, recycleKg, buttsG)
+            // shortcut: 꽁초는 따로 재지 않고(일반에 포함) 0으로 저장, 꽁초 수거 지표가 필요해지면 칸을 되살림
+            Weight(generalKg, recycleKg, 0.0)
         } else {
             null
         }
         if (form.photos.isEmpty()) {
-            val what = if (form.weighed) "저울" else "채운 봉투"
-            _uiState.value = state.copy(error = "$what 사진을 1장 이상 찍어 주세요.")
+            _uiState.value = state.copy(error = CollectionError.PHOTO)
             return
         }
         val record = ShiftRecord(
@@ -104,7 +101,7 @@ class CollectionViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = repository.finishShift(record).fold(
                 onSuccess = { CollectionUiState.Submitted },
-                onFailure = { state.copy(error = "저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요. 사진은 그대로 남아 있어요.") },
+                onFailure = { state.copy(error = CollectionError.SAVE) },
             )
         }
     }
@@ -119,7 +116,6 @@ class CollectionViewModel @Inject constructor(
         // DB check 제약과 같은 상한
         const val MAX_BAGS = 50
         const val MAX_KG = 500.0
-        const val MAX_G = 100_000.0
         const val MAX_NOTE = 1000
     }
 }

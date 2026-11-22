@@ -51,7 +51,10 @@ fun NightCleanNavHost() {
             CheckinRoute(onDone = { navController.popBackStack() })
         }
         composable<AppRoute.Collection> {
-            CollectionRoute(onSubmitted = { navController.popBackStack(AppRoute.ZoneMap, inclusive = false) })
+            CollectionRoute(
+                onSubmitted = { navController.popBackStack(AppRoute.ZoneMap, inclusive = false) },
+                onBack = { navController.popBackStack() },
+            )
         }
         composable<AppRoute.ShopReport> {
             ShopReportRoute(onSignOut = signOut)

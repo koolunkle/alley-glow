@@ -7,5 +7,8 @@ sealed interface CheckinUiState {
     /** 위치 확인과 서버 판정 중 */
     data object Working : CheckinUiState
     data class Done(val result: CheckinResult, val checkedAt: Long) : CheckinUiState
-    data class Error(val message: String) : CheckinUiState
+    /** 문구는 화면이 리소스로 보임 */
+    data class Error(val reason: CheckinError) : CheckinUiState
 }
+
+enum class CheckinError { LOCATION, NETWORK, PERMISSION, SCANNER }

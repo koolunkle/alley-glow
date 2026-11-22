@@ -90,7 +90,8 @@ fun PhotoRow(
                 },
                 enabled = enabled,
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                // 카드(surfaceVariant) 안에 놓이므로 한 단계 어두운 바탕
+                color = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.size(88.dp).semantics { contentDescription = "$label ${photos.size + 1} 촬영" },

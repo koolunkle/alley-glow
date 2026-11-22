@@ -9,22 +9,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,30 +30,33 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.nightclean.R
 import com.example.nightclean.domain.model.BAG_SLOT_HOURS
-import com.example.nightclean.domain.model.BUTT_REWARD_WON_PER_GRAM
 import com.example.nightclean.domain.model.HOURLY_WAGE_WON
-import com.example.nightclean.domain.model.KG_PER_BAG_ESTIMATE
 import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.MAX_PHOTOS
-import com.example.nightclean.domain.model.estimateIncome
-import com.example.nightclean.domain.model.estimateKgFromBags
+import com.example.nightclean.domain.model.estimateWage
 import com.example.nightclean.ui.common.PhotoRow
+import com.example.nightclean.ui.common.SectionCard
+import com.example.nightclean.ui.common.SubTopBar
 import com.example.nightclean.ui.theme.NightCleanTheme
+import com.example.nightclean.ui.theme.Spacing
+import com.example.nightclean.ui.theme.TouchHeight
+import com.example.nightclean.ui.theme.Warning
 
 @Composable
 fun CollectionRoute(
     onSubmitted: () -> Unit,
+    onBack: () -> Unit,
     viewModel: CollectionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,12 +68,11 @@ fun CollectionRoute(
             uiState = editing,
             workedMinutes = (viewModel.endedAt - viewModel.startedAt) / 60_000,
             beforePhotoCount = viewModel.beforePhotos.size,
+            onBack = onBack,
             onChangeBags = viewModel::changeBags,
             onGeneralKgChange = viewModel::changeGeneralKg,
             onRecycleKgChange = viewModel::changeRecycleKg,
-            onButtsGChange = viewModel::changeButtsG,
             onNoteChange = viewModel::changeNote,
-            onWeighedChange = viewModel::setWeighed,
             onAddPhoto = viewModel::addPhoto,
             onRemovePhoto = viewModel::removePhoto,
             onAddAfterPhoto = viewModel::addAfterPhoto,
@@ -88,12 +88,11 @@ fun CollectionScreen(
     workedMinutes: Long,
     /** 근무 화면에서 찍은 청소 전 사진 수(후 사진 안내용) */
     beforePhotoCount: Int,
+    onBack: () -> Unit,
     onChangeBags: (slot: Int, delta: Int) -> Unit,
     onGeneralKgChange: (String) -> Unit,
     onRecycleKgChange: (String) -> Unit,
-    onButtsGChange: (String) -> Unit,
     onNoteChange: (String) -> Unit,
-    onWeighedChange: (Boolean) -> Unit,
     onAddPhoto: (String) -> Unit,
     onRemovePhoto: (Int) -> Unit,
     onAddAfterPhoto: (String) -> Unit,
@@ -102,159 +101,165 @@ fun CollectionScreen(
 ) {
     val form = uiState.form
     val enabled = !uiState.isSubmitting
-    Scaffold { padding ->
+    Scaffold(
+        topBar = { SubTopBar(stringResource(R.string.collection_title), onBack) },
+        bottomBar = {
+            Column(
+                Modifier
+                    .background(MaterialTheme.colorScheme.background)
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s),
+            ) {
+                uiState.error?.let {
+                    Text(
+                        stringResource(
+                            when (it) {
+                                CollectionError.WEIGHT -> R.string.collection_error_weight
+                                CollectionError.PHOTO -> R.string.collection_error_photo
+                                CollectionError.SAVE -> R.string.collection_error_save
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Warning,
+                    )
+                }
+                Button(onClick = onSubmit, enabled = enabled, modifier = Modifier.fillMaxWidth().height(TouchHeight)) {
+                    if (uiState.isSubmitting) {
+                        CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.collection_submit), style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+        },
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = Spacing.l, vertical = Spacing.s),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            Text("오늘 치운 양을 알려주세요", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+            WorkSummary(workedMinutes)
 
-            Section {
-                Text("채운 봉투 (100L)", fontWeight = FontWeight.Bold)
+            SectionCard(stringResource(R.string.collection_bags), required = true, hint = stringResource(R.string.collection_bags_hint)) {
                 BAG_SLOT_HOURS.forEachIndexed { slot, hour ->
-                    BagStepper("$hour–${hour + 1}시", form.bags[slot], enabled) { delta -> onChangeBags(slot, delta) }
-                }
-            }
-
-            Section {
-                Text("무게", fontWeight = FontWeight.Bold)
-                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    WeighChoice("저울 없음", selected = !form.weighed, enabled, Modifier.weight(1f)) { onWeighedChange(false) }
-                    WeighChoice("저울로 쟀어요", selected = form.weighed, enabled, Modifier.weight(1f)) { onWeighedChange(true) }
-                }
-                if (form.weighed) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WeightField("일반 (kg)", form.generalKg, enabled, onGeneralKgChange, Modifier.weight(1f))
-                        WeightField("재활용 (kg)", form.recycleKg, enabled, onRecycleKgChange, Modifier.weight(1f))
-                        WeightField("꽁초 (g)", form.buttsG, enabled, onButtsGChange, Modifier.weight(1f))
+                    BagStepper(stringResource(R.string.collection_bag_slot, hour, (hour + 1) % 24), form.bags[slot], enabled) { delta ->
+                        onChangeBags(slot, delta)
                     }
-                } else {
-                    val bags = form.bags.sum()
-                    Text(
-                        "추정 약 ${formatKg(estimateKgFromBags(bags))}kg (봉투 ${bags}장 × ${formatKg(KG_PER_BAG_ESTIMATE)}kg, 가정값)",
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Hint("추정치는 저장하지 않아요. 수거량 보상은 저울로 잰 무게로만 계산돼요.")
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                Row(Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.collection_bags_total), Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.shift_bags_value, form.bags.sum()), style = MaterialTheme.typography.titleMedium)
                 }
             }
 
-            Section {
-                val what = if (form.weighed) "저울" else "채운 봉투"
-                Text("$what 사진 (필수, 최대 ${MAX_PHOTOS}장)", fontWeight = FontWeight.Bold)
-                Hint(if (form.weighed) "봉투를 저울에 올리고 눈금이 보이게 찍어 주세요" else "채운 봉투가 모두 보이게 찍어 주세요")
-                PhotoRow(form.photos, MAX_PHOTOS, "$what 사진", enabled, onAddPhoto, onRemovePhoto)
-            }
-
-            Section {
-                Text("청소 후 사진 (선택, 최대 ${MAX_BEFORE_AFTER_PHOTOS}장)", fontWeight = FontWeight.Bold)
-                Hint(
-                    if (beforePhotoCount > 0) {
-                        "청소 전 사진 ${beforePhotoCount}장과 같은 자리, 같은 각도로 찍어 주세요"
-                    } else {
-                        "청소 전 사진은 근무 화면에서 찍어요. 같은 자리, 같은 각도로 찍으면 비교하기 좋아요"
-                    },
-                )
-                PhotoRow(form.afterPhotos, MAX_BEFORE_AFTER_PHOTOS, "청소 후 사진", enabled, onAddAfterPhoto, onRemoveAfterPhoto)
-            }
-
-            OutlinedTextField(
-                value = form.note,
-                onValueChange = onNoteChange,
-                label = { Text("특이사항 (민원, 위험 상황, 혼잡)") },
-                enabled = enabled,
-                minLines = 2,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            val buttsG = if (form.weighed) form.buttsG.toWeight(Double.MAX_VALUE) ?: 0.0 else 0.0
-            val income = estimateIncome(workedMinutes, buttsG)
-            Section {
-                Text("오늘 예상 수입 · 근무 ${workedMinutes / 60}시간 ${workedMinutes % 60}분", fontWeight = FontWeight.Bold)
-                IncomeRow("광고비 몫 (시급 ${HOURLY_WAGE_WON.won()})", income.wage)
-                IncomeRow("꽁초 보상 (저울 사용·제도 도입 시, 1g당 ${BUTT_REWARD_WON_PER_GRAM}원)", income.buttReward)
-                HorizontalDivider()
-                IncomeRow("합계", income.total, bold = true)
-            }
-
-            uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Button(
-                onClick = onSubmit,
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+            SectionCard(
+                stringResource(R.string.collection_photos),
+                required = true,
+                hint = stringResource(if (form.weighed) R.string.collection_photos_hint_weighed else R.string.collection_photos_hint),
             ) {
-                if (uiState.isSubmitting) {
-                    CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                PhotoRow(form.photos, MAX_PHOTOS, stringResource(R.string.collection_photos), enabled, onAddPhoto, onRemovePhoto)
+            }
+
+            SectionCard(
+                stringResource(R.string.collection_after_photos),
+                required = false,
+                hint = if (beforePhotoCount > 0) {
+                    stringResource(R.string.collection_after_photos_hint, beforePhotoCount)
                 } else {
-                    Text("근무 종료하기", fontWeight = FontWeight.Bold)
+                    stringResource(R.string.collection_after_photos_hint_none)
+                },
+            ) {
+                PhotoRow(form.afterPhotos, MAX_BEFORE_AFTER_PHOTOS, stringResource(R.string.collection_after_photos), enabled, onAddAfterPhoto, onRemoveAfterPhoto)
+            }
+
+            // 시급제라 무게는 수당과 무관. 저울을 썼을 때만 적음(상인 리포트 kg), 비우면 저울 없이 저장
+            SectionCard(stringResource(R.string.collection_weight), required = false, hint = stringResource(R.string.collection_weight_hint)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    WeightField(stringResource(R.string.collection_weight_general), form.generalKg, enabled, onGeneralKgChange, Modifier.weight(1f))
+                    WeightField(stringResource(R.string.collection_weight_recycle), form.recycleKg, enabled, onRecycleKgChange, Modifier.weight(1f))
                 }
+            }
+
+            SectionCard(stringResource(R.string.collection_note), required = false, hint = stringResource(R.string.collection_note_hint)) {
+                OutlinedTextField(
+                    value = form.note,
+                    onValueChange = onNoteChange,
+                    enabled = enabled,
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }
 }
 
+/** 근무 시간과 시급제 예상 수당(수거량과 무관) */
 @Composable
-private fun Section(content: @Composable () -> Unit) {
+private fun WorkSummary(workedMinutes: Long) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) { content() }
-}
-
-@Composable
-private fun Hint(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .padding(Spacing.l),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            Text(stringResource(R.string.collection_worked), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.collection_worked_value, workedMinutes / 60, workedMinutes % 60), style = MaterialTheme.typography.headlineMedium)
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(R.string.collection_wage), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.collection_wage_basis, HOURLY_WAGE_WON.won()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(estimateWage(workedMinutes).won(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        }
+    }
 }
 
 @Composable
 private fun BagStepper(label: String, count: Int, enabled: Boolean, onChange: (Int) -> Unit) {
+    val minusDesc = stringResource(R.string.collection_bag_minus_desc, label)
+    val plusDesc = stringResource(R.string.collection_bag_plus_desc, label)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, modifier = Modifier.weight(1f))
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
         FilledTonalButton(
             onClick = { onChange(-1) },
             enabled = enabled && count > 0,
             contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.size(56.dp).semantics { contentDescription = "$label 봉투 하나 빼기" },
-        ) { Text("−") }
+            colors = stepperColors(),
+            modifier = Modifier.size(TouchHeight).semantics { contentDescription = minusDesc },
+        ) { Text("−", style = MaterialTheme.typography.titleLarge) }
         Text(
             "$count",
-            modifier = Modifier.widthIn(min = 40.dp),
+            modifier = Modifier.widthIn(min = 48.dp),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Black,
         )
         FilledTonalButton(
             onClick = { onChange(1) },
             enabled = enabled,
             contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.size(56.dp).semantics { contentDescription = "$label 봉투 하나 더하기" },
-        ) { Text("+") }
+            colors = stepperColors(),
+            modifier = Modifier.size(TouchHeight).semantics { contentDescription = plusDesc },
+        ) { Text("+", style = MaterialTheme.typography.titleLarge) }
     }
 }
 
-/** 저울 사용 여부 선택(라디오 그룹) */
+/** 카드 안 −/+: 어두운 바탕, 비활성은 더 흐리게 */
 @Composable
-private fun WeighChoice(label: String, selected: Boolean, enabled: Boolean, modifier: Modifier, onSelect: () -> Unit) {
-    Row(
-        modifier
-            .height(56.dp)
-            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onSelect),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null, enabled = enabled)
-        Text(label, modifier = Modifier.padding(start = 4.dp))
-    }
-}
-
-/** 소수점 아래가 0이면 정수로(18.0 → 18) */
-private fun formatKg(kg: Double): String = if (kg % 1.0 == 0.0) kg.toLong().toString() else "%.1f".format(kg)
+private fun stepperColors() = ButtonDefaults.filledTonalButtonColors(
+    containerColor = MaterialTheme.colorScheme.background,
+    disabledContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.4f),
+    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+)
 
 @Composable
 private fun WeightField(label: String, value: String, enabled: Boolean, onChange: (String) -> Unit, modifier: Modifier) {
@@ -270,14 +275,6 @@ private fun WeightField(label: String, value: String, enabled: Boolean, onChange
     )
 }
 
-@Composable
-private fun IncomeRow(label: String, won: Long, bold: Boolean = false) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(won.won(), fontWeight = if (bold) FontWeight.Black else FontWeight.Normal)
-    }
-}
-
 private fun Long.won() = "%,d원".format(this)
 
 @Preview
@@ -286,12 +283,13 @@ private fun CollectionScreenPreview() {
     NightCleanTheme {
         CollectionScreen(
             uiState = CollectionUiState.Editing(
-                form = CollectionForm(bags = listOf(1, 2, 1, 0), generalKg = "12.5", recycleKg = "3", buttsG = "250"),
+                form = CollectionForm(bags = listOf(1, 2, 1, 0), generalKg = "12.5", recycleKg = "3"),
             ),
-            workedMinutes = 240,
+            workedMinutes = 232,
             beforePhotoCount = 1,
-            onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {}, onButtsGChange = {},
-            onNoteChange = {}, onWeighedChange = {}, onAddPhoto = {}, onRemovePhoto = {},
+            onBack = {},
+            onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {},
+            onNoteChange = {}, onAddPhoto = {}, onRemovePhoto = {},
             onAddAfterPhoto = {}, onRemoveAfterPhoto = {}, onSubmit = {},
         )
     }

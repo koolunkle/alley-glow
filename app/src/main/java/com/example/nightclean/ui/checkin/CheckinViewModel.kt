@@ -35,21 +35,21 @@ class CheckinViewModel @Inject constructor(
         viewModelScope.launch {
             val here = location.currentLocation()
             if (here == null) {
-                _uiState.value = CheckinUiState.Error("현재 위치를 확인하지 못했어요. 위치 서비스를 켜고 다시 시도해 주세요.")
+                _uiState.value = CheckinUiState.Error(CheckinError.LOCATION)
                 return@launch
             }
             _uiState.value = checkins.checkIn(shiftId, zoneId, startedAt, shopCodeOf(qr), here).fold(
                 onSuccess = { CheckinUiState.Done(it, System.currentTimeMillis()) },
-                onFailure = { CheckinUiState.Error("체크인하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.") },
+                onFailure = { CheckinUiState.Error(CheckinError.NETWORK) },
             )
         }
     }
 
     fun onPermissionDenied() {
-        _uiState.value = CheckinUiState.Error("정확한 위치 권한이 있어야 체크인할 수 있어요. 가게 앞인지 확인하는 데만 써요.")
+        _uiState.value = CheckinUiState.Error(CheckinError.PERMISSION)
     }
 
     fun onScannerFailed() {
-        _uiState.value = CheckinUiState.Error("QR 스캐너를 열지 못했어요. 잠시 뒤 다시 시도해 주세요.")
+        _uiState.value = CheckinUiState.Error(CheckinError.SCANNER)
     }
 }

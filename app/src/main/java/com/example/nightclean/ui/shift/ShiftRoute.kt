@@ -67,6 +67,7 @@ import com.example.nightclean.domain.model.currentAt
 import com.example.nightclean.domain.model.nextAfter
 import com.example.nightclean.domain.model.nightHour
 import com.example.nightclean.ui.common.PhotoRow
+import com.example.nightclean.ui.common.SectionCard
 import com.example.nightclean.ui.theme.NightCleanTheme
 import com.example.nightclean.ui.theme.Spacing
 import com.example.nightclean.ui.theme.TouchHeight
@@ -235,24 +236,11 @@ fun ShiftScreen(
                     SlotCard(uiState.slots.currentAt(hour), uiState.slots.nextAfter(hour))
                 }
             }
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text(stringResource(R.string.shift_before_photos), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(R.string.optional),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                            .padding(horizontal = Spacing.s, vertical = 2.dp),
-                    )
-                }
-                Text(
-                    stringResource(R.string.shift_before_photos_caption),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(Spacing.xs))
+            SectionCard(
+                stringResource(R.string.shift_before_photos),
+                required = false,
+                hint = stringResource(R.string.shift_before_photos_caption),
+            ) {
                 PhotoRow(beforePhotos, MAX_BEFORE_AFTER_PHOTOS, stringResource(R.string.shift_before_photos), enabled = true, onAddBeforePhoto, onRemoveBeforePhoto)
             }
         }

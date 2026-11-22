@@ -27,9 +27,3 @@ data class Weight(val generalKg: Double, val recycleKg: Double, val buttsG: Doub
 
 const val MAX_PHOTOS = 3
 const val MAX_BEFORE_AFTER_PHOTOS = 2
-
-// shortcut: 100L 봉투 1장 평균 무게 가정값, 이태원 시범 실측(봉투 수와 kg)이 나오면 그 평균으로
-const val KG_PER_BAG_ESTIMATE = 6.0
-
-/** 저울이 없을 때 화면에 보여 줄 추정 무게. 저장하지 않음 */
-fun estimateKgFromBags(bags: Int): Double = bags.coerceAtLeast(0) * KG_PER_BAG_ESTIMATE

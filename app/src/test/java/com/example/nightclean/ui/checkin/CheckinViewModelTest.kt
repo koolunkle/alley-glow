@@ -66,7 +66,7 @@ class CheckinViewModelTest {
         val vm = viewModel(FakeCheckins(Result.failure(IllegalStateException("raw"))))
         vm.checkIn("NC-SHOP-001")
         assertEquals(
-            CheckinUiState.Error("체크인하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요."),
+            CheckinUiState.Error(CheckinError.NETWORK),
             vm.uiState.value,
         )
     }

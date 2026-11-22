@@ -7,6 +7,8 @@
     <string name="sign_out">로그아웃</string>
     <string name="retry">다시 시도</string>
     <string name="optional">선택</string>
+    <string name="required">필수</string>
+    <string name="back">뒤로 가기</string>
 
     <!-- 로그인 -->
     <string name="login_subtitle">회원가입 없이 운영자가 발급한 계정으로 로그인해요</string>
@@ -61,9 +63,60 @@
     <string name="shift_before_photos">청소 전 사진</string>
     <string name="shift_before_photos_caption">근무 종료 때 같은 자리, 같은 각도로 청소 후 사진을 찍어요</string>
     <string name="shift_checkin">QR 체크인</string>
-    <string name="shift_finish">근무 종료 · 수거량 입력</string>
+    <string name="shift_finish">근무 종료</string>
     <string name="emergency_body">번호를 누르면 전화 앱이 열리고, 통화 버튼을 눌러야 연결됩니다.</string>
     <string name="emergency_police">112 경찰</string>
     <string name="emergency_fire">119 화재·구급</string>
     <string name="close">닫기</string>
+
+    <!-- 가게 체크인 -->
+    <string name="checkin_title">가게 체크인</string>
+    <string name="checkin_idle_title">가게 앞 QR을 스캔하세요</string>
+    <string name="checkin_idle_caption">가게 50m 안에서만 체크인이 인정돼요</string>
+    <string name="checkin_working">위치 확인 중</string>
+    <string name="checkin_done_title">체크인 완료</string>
+    <string name="checkin_done_caption">가게에서 %1$s · %2$s</string>
+    <string name="checkin_too_far_title">%1$s 떨어져 있어요</string>
+    <string name="checkin_too_far_caption">가게 앞 50m 안에서 다시 스캔해 주세요</string>
+    <string name="checkin_unknown_title">등록되지 않은 QR</string>
+    <string name="checkin_unknown_caption">가게에 붙은 Night Clean QR을 스캔해 주세요</string>
+    <string name="checkin_unknown_value">읽은 값: %1$s</string>
+    <string name="checkin_error_title">체크인하지 못했어요</string>
+    <string name="checkin_error_location">현재 위치를 확인하지 못했어요. 위치 서비스를 켜고 다시 시도해 주세요.</string>
+    <string name="checkin_error_network">네트워크를 확인한 뒤 다시 시도해 주세요.</string>
+    <string name="checkin_error_permission">정확한 위치 권한이 필요해요. 가게 앞인지 확인하는 데만 써요.</string>
+    <string name="checkin_error_scanner">QR 스캐너를 열지 못했어요. 잠시 뒤 다시 시도해 주세요.</string>
+    <string name="checkin_scan">QR 스캔</string>
+    <string name="checkin_rescan">다시 스캔</string>
+    <string name="checkin_scan_another">다른 가게 스캔</string>
+    <string name="checkin_back_to_shift">근무 화면으로</string>
+
+    <!-- 근무 종료 -->
+    <string name="collection_title">근무 종료</string>
+    <string name="collection_worked">오늘 근무</string>
+    <string name="collection_worked_value">%1$d시간 %2$d분</string>
+    <string name="collection_wage">예상 수당</string>
+    <string name="collection_wage_basis">시급 %1$s · 분 단위</string>
+    <string name="collection_bags">채운 봉투 (100L)</string>
+    <string name="collection_bags_hint">근무 중에 기록한 봉투 수예요. 실제와 다르면 −/+로 맞춰 주세요</string>
+    <string name="collection_bag_slot">%1$d–%2$d시</string>
+    <string name="collection_bags_total">합계</string>
+    <string name="collection_bag_minus_desc">%1$s 봉투 하나 빼기</string>
+    <string name="collection_bag_plus_desc">%1$s 봉투 하나 더하기</string>
+    <string name="collection_photos">채운 봉투 사진</string>
+    <string name="collection_photos_hint">채운 봉투가 모두 보이게 찍어 주세요</string>
+    <string name="collection_photos_hint_weighed">봉투와 저울 눈금이 함께 보이게 찍어 주세요</string>
+    <string name="collection_after_photos">청소 후 사진</string>
+    <string name="collection_after_photos_hint">청소 전 사진 %1$d장과 같은 자리, 같은 각도로 찍어요</string>
+    <string name="collection_after_photos_hint_none">청소 전 사진과 같은 자리에서 찍으면 비교하기 좋아요</string>
+    <string name="collection_weight">무게</string>
+    <string name="collection_weight_hint">저울로 쟀을 때만 적어 주세요. 비워 두어도 돼요</string>
+    <string name="collection_weight_general">일반 (kg)</string>
+    <string name="collection_weight_recycle">재활용 (kg)</string>
+    <string name="collection_note">특이사항</string>
+    <string name="collection_note_hint">민원, 위험 상황, 혼잡 등</string>
+    <string name="collection_submit">근무 종료하기</string>
+    <string name="collection_error_weight">무게는 숫자로 적어 주세요.</string>
+    <string name="collection_error_photo">채운 봉투 사진을 1장 이상 찍어 주세요.</string>
+    <string name="collection_error_save">저장하지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요. 입력과 사진은 그대로 남아 있어요.</string>
 </resources>

@@ -4,43 +4,50 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.nightclean.R
 import com.example.nightclean.domain.model.CheckinResult
+import com.example.nightclean.ui.common.SubTopBar
 import com.example.nightclean.ui.theme.NightCleanTheme
+import com.example.nightclean.ui.theme.Spacing
+import com.example.nightclean.ui.theme.TouchHeight
 import com.example.nightclean.ui.theme.Warning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
@@ -73,108 +80,168 @@ fun CheckinRoute(
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
         if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true) scan() else viewModel.onPermissionDenied()
     }
-    CheckinScreen(
-        uiState = uiState,
-        onScan = {
-            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED
-            if (granted) {
-                scan()
-            } else {
-                permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-            }
-        },
-        onDone = onDone,
-    )
+    val startScan = {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            scan()
+        } else {
+            permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
+    }
+    // 근무 화면에서 'QR 체크인'을 눌러 들어왔으니 스캐너를 바로 엶(화면 재생성 때는 다시 열지 않음)
+    var autoScanned by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!autoScanned) {
+            autoScanned = true
+            startScan()
+        }
+    }
+    CheckinScreen(uiState = uiState, onScan = startScan, onDone = onDone)
 }
 
 @Composable
 fun CheckinScreen(uiState: CheckinUiState, onScan: () -> Unit, onDone: () -> Unit) {
-    Scaffold { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text("가게 체크인", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-            when (uiState) {
-                CheckinUiState.Idle -> Text(
-                    "가게 앞에서 가게 QR을 스캔하세요. 체크인은 가게 50m 안에서만 인정돼요.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                CheckinUiState.Working -> Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                    Text("위치를 확인하고 있어요", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                is CheckinUiState.Done -> CheckinResultView(uiState.result, uiState.checkedAt)
-                is CheckinUiState.Error -> Notice(uiState.message)
-            }
-            Spacer(Modifier.weight(1f))
-            Button(
-                onClick = onScan,
-                enabled = uiState != CheckinUiState.Working,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+    val succeeded = uiState is CheckinUiState.Done && uiState.result is CheckinResult.CheckedIn
+    Scaffold(
+        topBar = { SubTopBar(stringResource(R.string.checkin_title), onDone) },
+        bottomBar = {
+            Column(
+                Modifier
+                    .navigationBarsPadding()
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             ) {
-                Text(if (uiState is CheckinUiState.Idle) "가게 QR 스캔" else "다시 스캔", fontWeight = FontWeight.Bold)
+                // 성공하면 근무로 돌아가는 게 다음 동작, 그 밖에는 다시 스캔
+                if (succeeded) {
+                    Button(onClick = onDone, modifier = Modifier.fillMaxWidth().height(TouchHeight)) {
+                        Text(stringResource(R.string.checkin_back_to_shift), style = MaterialTheme.typography.labelLarge)
+                    }
+                    TextButton(onClick = onScan, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                        Text(stringResource(R.string.checkin_scan_another), style = MaterialTheme.typography.labelMedium)
+                    }
+                } else {
+                    Button(
+                        onClick = onScan,
+                        enabled = uiState != CheckinUiState.Working,
+                        modifier = Modifier.fillMaxWidth().height(TouchHeight),
+                    ) {
+                        Text(
+                            stringResource(if (uiState is CheckinUiState.Idle) R.string.checkin_scan else R.string.checkin_rescan),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                    TextButton(onClick = onDone, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                        Text(stringResource(R.string.checkin_back_to_shift), style = MaterialTheme.typography.labelMedium)
+                    }
+                }
             }
-            OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-                Text("근무 화면으로", fontWeight = FontWeight.Bold)
+        },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding).padding(horizontal = Spacing.l), Alignment.Center) {
+            when (uiState) {
+                CheckinUiState.Idle -> StatusHero(
+                    icon = R.drawable.ic_qr_scan,
+                    container = MaterialTheme.colorScheme.surfaceVariant,
+                    content = MaterialTheme.colorScheme.onSurface,
+                    title = stringResource(R.string.checkin_idle_title),
+                    caption = stringResource(R.string.checkin_idle_caption),
+                )
+                CheckinUiState.Working -> Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.l),
+                ) {
+                    CircularProgressIndicator(Modifier.size(48.dp))
+                    Text(stringResource(R.string.checkin_working), style = MaterialTheme.typography.titleMedium)
+                }
+                is CheckinUiState.Done -> ResultHero(uiState.result, uiState.checkedAt)
+                is CheckinUiState.Error -> StatusHero(
+                    icon = R.drawable.ic_warning,
+                    container = Warning.copy(alpha = 0.16f),
+                    content = Warning,
+                    title = stringResource(R.string.checkin_error_title),
+                    caption = stringResource(
+                        when (uiState.reason) {
+                            CheckinError.LOCATION -> R.string.checkin_error_location
+                            CheckinError.NETWORK -> R.string.checkin_error_network
+                            CheckinError.PERMISSION -> R.string.checkin_error_permission
+                            CheckinError.SCANNER -> R.string.checkin_error_scanner
+                        },
+                    ),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CheckinResultView(result: CheckinResult, checkedAt: Long) {
+private fun ResultHero(result: CheckinResult, checkedAt: Long) {
     when (result) {
-        is CheckinResult.CheckedIn -> Column(
-            Modifier.fillMaxWidth().padding(top = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                Modifier.size(112.dp).background(MaterialTheme.colorScheme.primary, CircleShape).clearAndSetSemantics {},
-                Alignment.Center,
-            ) {
-                Text("✓", color = MaterialTheme.colorScheme.onPrimary, fontSize = 56.sp, fontWeight = FontWeight.Black)
-            }
-            Text(
-                "${result.shopName}\n체크인 완료",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                "가게에서 ${formatDistance(result.distanceM)} · ${SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(checkedAt))}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        is CheckinResult.TooFar ->
-            Notice("${result.shopName}에서 ${formatDistance(result.distanceM)} 떨어져 있어요. 가게 앞에서 다시 스캔해 주세요.")
-        is CheckinResult.UnknownShop -> Notice(
-            "등록된 가게 QR이 아니에요. 가게에 붙은 클린 워커 QR을 스캔해 주세요.\n읽은 값: ${result.shopCode.take(40)}",
+        is CheckinResult.CheckedIn -> StatusHero(
+            icon = R.drawable.ic_check,
+            container = MaterialTheme.colorScheme.primary,
+            content = MaterialTheme.colorScheme.onPrimary,
+            overline = result.shopName,
+            title = stringResource(R.string.checkin_done_title),
+            caption = stringResource(
+                R.string.checkin_done_caption,
+                formatDistance(result.distanceM),
+                SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(checkedAt)),
+            ),
         )
+        is CheckinResult.TooFar -> StatusHero(
+            icon = R.drawable.ic_place,
+            container = Warning.copy(alpha = 0.16f),
+            content = Warning,
+            overline = result.shopName,
+            title = stringResource(R.string.checkin_too_far_title, formatDistance(result.distanceM)),
+            caption = stringResource(R.string.checkin_too_far_caption),
+        )
+        is CheckinResult.UnknownShop -> StatusHero(
+            icon = R.drawable.ic_warning,
+            container = Warning.copy(alpha = 0.16f),
+            content = Warning,
+            title = stringResource(R.string.checkin_unknown_title),
+            caption = stringResource(R.string.checkin_unknown_caption),
+            detail = stringResource(R.string.checkin_unknown_value, result.shopCode.take(40)),
+        )
+    }
+}
+
+/** 상태 하나를 큰 원 아이콘 + (가게명) + 제목 + 한 줄 설명으로. 모든 결과가 같은 틀 */
+@Composable
+private fun StatusHero(
+    @DrawableRes icon: Int,
+    container: Color,
+    content: Color,
+    title: String,
+    caption: String,
+    overline: String? = null,
+    detail: String? = null,
+) {
+    Column(
+        Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Box(Modifier.size(112.dp).background(container, CircleShape), Alignment.Center) {
+            Icon(painterResource(icon), contentDescription = null, tint = content, modifier = Modifier.size(56.dp))
+        }
+        Box(Modifier.height(Spacing.s))
+        overline?.let {
+            Text(it, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        }
+        Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Text(caption, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        detail?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        }
     }
 }
 
 /** 1km 미만은 m, 이상은 소수 한 자리 km(18476 → 18.5km) */
 internal fun formatDistance(meters: Int): String =
     if (meters < 1000) "${meters}m" else "%.1fkm".format(Locale.US, meters / 1000.0)
-
-/** 주의 안내(거리 초과, 오류) */
-@Composable
-private fun Notice(message: String, color: Color = Warning) {
-    Text(
-        message,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-        color = color,
-    )
-}
 
 @Preview
 @Composable
