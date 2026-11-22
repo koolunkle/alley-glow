@@ -17,6 +17,15 @@ private val NightColorScheme = darkColorScheme(
     onSurface = Ink,
     surfaceVariant = NavySurface,
     onSurfaceVariant = InkMuted,
+    // 보조(tonal) 버튼이 기본 보라로 나오지 않게 남색 계열로
+    secondaryContainer = NavyRaised,
+    onSecondaryContainer = Ink,
+    // 드롭다운·다이얼로그 바탕
+    surfaceContainerLowest = Navy,
+    surfaceContainerLow = NavySurface,
+    surfaceContainer = NavyRaised,
+    surfaceContainerHigh = NavyRaised,
+    surfaceContainerHighest = NavyRaised,
     outline = NavyLine,
     error = Warning,
     onError = Navy,

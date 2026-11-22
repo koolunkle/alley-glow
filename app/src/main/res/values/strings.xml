@@ -6,25 +6,26 @@
     <string name="account_menu">계정 메뉴</string>
     <string name="sign_out">로그아웃</string>
     <string name="retry">다시 시도</string>
+    <string name="optional">선택</string>
 
     <!-- 로그인 -->
-    <string name="login_subtitle">운영자가 발급한 계정으로 로그인</string>
+    <string name="login_subtitle">회원가입 없이 운영자가 발급한 계정으로 로그인해요</string>
     <string name="login_email">이메일</string>
     <string name="login_password">비밀번호</string>
     <string name="login_submit">로그인</string>
     <!-- 구역 지도 -->
     <string name="zonemap_title">오늘 밤, 어느 골목으로 갈까요?</string>
-    <string name="zonemap_subtitle">금·토 19~23시 유동 인구, 휴지통 거리, 심야 매출 기준</string>
     <string name="zonemap_load_error">구역 정보를 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.</string>
     <string name="zonemap_select_hint">격자에서 근무할 구역을 고르세요</string>
     <string name="zonemap_select_action">%1$s 선택</string>
-    <string name="zonemap_legend_low">추천도 낮음</string>
+    <string name="zonemap_legend_title">추천도</string>
+    <string name="zonemap_legend_low">낮음</string>
     <string name="zonemap_legend_high">높음</string>
-    <string name="zonemap_legend_rank">순위</string>
-    <string name="zonemap_station_badge">역</string>
     <string name="zonemap_station">이태원역</string>
     <string name="zonemap_rank">추천 %1$d위 · %2$d칸 중</string>
-    <string name="zonemap_score">점수 %1$s</string>
+    <string name="zonemap_score">추천 지수 %1$d/100</string>
+    <string name="zonemap_score_info_desc">추천 지수 설명</string>
+    <string name="zonemap_score_info">밤 인구 50%, 휴지통 거리 30%, 심야 매출 20%를 36칸 안에서 비교해 100점 만점으로 환산했어요. 가중치는 가정값입니다.</string>
     <string name="zonemap_fact_pop">밤 인구</string>
     <string name="zonemap_fact_pop_value">%1$s명</string>
     <string name="zonemap_fact_pop_vs_weekday">평일보다 %1$s</string>
@@ -33,5 +34,36 @@
     <string name="zonemap_fact_sales">심야 매출</string>
     <string name="zonemap_fact_sales_caption">21~24시 · 분기</string>
     <string name="zonemap_start">이 구역에서 근무 시작</string>
+    <string name="zonemap_source_short">출처: 서울 열린데이터광장 · 서울특별시·KT</string>
+    <string name="zonemap_source_toggle">출처 자세히 보기</string>
     <string name="zonemap_source">출처: 서울 열린데이터광장(서울 생활인구 2026.11, 가로쓰레기통 설치정보 2025.11, 상권분석서비스 2025), 서울특별시·KT</string>
+
+    <!-- 근무 중 -->
+    <string name="shift_status">근무 중</string>
+    <string name="shift_status_tracking">근무 중 · GPS 기록 중</string>
+    <string name="shift_emergency">긴급 연락</string>
+    <string name="shift_elapsed">근무 시간</string>
+    <string name="shift_started">%1$s 시작 · %2$s</string>
+    <string name="shift_consent_title">위치 기록 꺼짐</string>
+    <string name="shift_consent_body">근무 중에만 30초마다 기록, 구역 근무 확인에만 사용</string>
+    <string name="shift_consent_denied">정확한 위치 권한을 허용해야 기록할 수 있어요.</string>
+    <string name="shift_consent_start">동의하고 시작</string>
+    <string name="shift_checkins">가게 체크인</string>
+    <string name="shift_checkins_value">%1$d곳</string>
+    <string name="shift_bags">채운 봉투</string>
+    <string name="shift_bags_value">%1$d장</string>
+    <string name="shift_bag_add_desc">채운 봉투 하나 추가</string>
+    <string name="shift_bag_undo_desc">마지막 봉투 되돌리기</string>
+    <string name="shift_slots_error">광고 일정을 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.</string>
+    <string name="shift_slots_none">오늘 남은 광고가 없어요</string>
+    <string name="shift_slot_now">지금 광고 %1$d–%2$d시</string>
+    <string name="shift_slot_next">다음 %1$d–%2$d시</string>
+    <string name="shift_before_photos">청소 전 사진</string>
+    <string name="shift_before_photos_caption">근무 종료 때 같은 자리, 같은 각도로 청소 후 사진을 찍어요</string>
+    <string name="shift_checkin">QR 체크인</string>
+    <string name="shift_finish">근무 종료 · 수거량 입력</string>
+    <string name="emergency_body">번호를 누르면 전화 앱이 열리고, 통화 버튼을 눌러야 연결됩니다.</string>
+    <string name="emergency_police">112 경찰</string>
+    <string name="emergency_fire">119 화재·구급</string>
+    <string name="close">닫기</string>
 </resources>

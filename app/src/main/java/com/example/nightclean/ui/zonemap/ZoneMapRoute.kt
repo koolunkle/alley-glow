@@ -16,23 +16,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -60,7 +63,7 @@ private const val COLUMNS = 6
 /** 상태 보유 진입점. ViewModel 연결 후 상태와 이벤트를 Screen에 전달 */
 @Composable
 fun ZoneMapRoute(
-    onStartShift: (zoneId: String) -> Unit,
+    onStartShift: (zoneId: String, zoneName: String) -> Unit,
     onSignOut: () -> Unit,
     viewModel: ZoneMapViewModel = hiltViewModel(),
 ) {
@@ -68,7 +71,7 @@ fun ZoneMapRoute(
     val workerName by viewModel.workerName.collectAsStateWithLifecycle()
     ZoneMapScreen(
         uiState = uiState,
-        account = workerName ?: stringResource(R.string.role_worker),
+        workerName = workerName,
         onSelectZone = viewModel::selectZone,
         onRetry = viewModel::load,
         onStartShift = onStartShift,
@@ -80,13 +83,13 @@ fun ZoneMapRoute(
 @Composable
 fun ZoneMapScreen(
     uiState: ZoneMapUiState,
-    account: String,
+    workerName: String?,
     onSelectZone: (String) -> Unit,
     onRetry: () -> Unit,
-    onStartShift: (String) -> Unit,
+    onStartShift: (zoneId: String, zoneName: String) -> Unit,
     onSignOut: () -> Unit,
 ) {
-    Scaffold(topBar = { AppTopBar(account, onSignOut) }) { padding ->
+    Scaffold(topBar = { AppTopBar(stringResource(R.string.role_worker), workerName, onSignOut) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -95,14 +98,7 @@ fun ZoneMapScreen(
                 .padding(start = Spacing.l, end = Spacing.l, top = Spacing.s, bottom = Spacing.xl),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(stringResource(R.string.zonemap_title), style = MaterialTheme.typography.headlineSmall)
-                Text(
-                    stringResource(R.string.zonemap_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(stringResource(R.string.zonemap_title), style = MaterialTheme.typography.headlineSmall)
             when (uiState) {
                 ZoneMapUiState.Loading -> Box(Modifier.fillMaxWidth().aspectRatio(1f), Alignment.Center) {
                     CircularProgressIndicator()
@@ -117,15 +113,10 @@ fun ZoneMapScreen(
                     }
                     MapCard(uiState.zones, ranks, uiState.selectedZoneId, onSelectZone)
                     uiState.selectedZone?.let { zone ->
-                        ZoneCard(zone, ranks.getValue(zone.id), uiState.zones.size, onStart = { onStartShift(zone.id) })
+                        ZoneCard(zone, ranks.getValue(zone.id), uiState.zones.size, onStart = { onStartShift(zone.id, zone.name) })
                     } ?: Text(stringResource(R.string.zonemap_select_hint), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            Text(
-                stringResource(R.string.zonemap_source),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -165,27 +156,42 @@ private fun MapCard(zones: List<Zone>, ranks: Map<String, Int>, selectedZoneId: 
                                     onClickLabel = stringResource(R.string.zonemap_select_action, zone.name),
                                 ) { onSelectZone(zone.id) },
                         ) {
-                            if (rank <= 3) Badge(rank.toString(), Modifier.align(Alignment.TopEnd))
-                            if (zone.id == STATION_ZONE_ID) {
-                                Badge(
-                                    stringResource(R.string.zonemap_station_badge),
-                                    Modifier.align(Alignment.TopStart),
-                                    MaterialTheme.colorScheme.onSurface,
-                                    MaterialTheme.colorScheme.surface,
-                                )
-                            }
+                            // 역은 칸 정중앙(위치), 순위는 오른쪽 위 배지. 자리가 달라 한 칸에 둘이어도 안 겹침
+                            if (zone.id == STATION_ZONE_ID) StationPin(Modifier.align(Alignment.Center))
+                            if (rank <= 3) Badge(rank.toString(), Modifier.align(Alignment.TopEnd).padding(Spacing.xs))
                         }
                     }
                 }
             }
         }
         Legend()
+        Source()
     }
+}
+
+/** 이태원역 표시(칸 안과 범례 공통) */
+@Composable
+private fun StationPin(modifier: Modifier = Modifier) {
+    Box(modifier.size(22.dp).background(MaterialTheme.colorScheme.onSurface, CircleShape), Alignment.Center) {
+        Icon(painterResource(R.drawable.ic_place), contentDescription = null, tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(15.dp))
+    }
+}
+
+/** 출처 한 줄(필수 표기). 누르면 데이터셋 전체 */
+@Composable
+private fun Source() {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Text(
+        stringResource(if (expanded) R.string.zonemap_source else R.string.zonemap_source_short),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth().clickable(onClickLabel = stringResource(R.string.zonemap_source_toggle)) { expanded = !expanded },
+    )
 }
 
 @Composable
 private fun Badge(label: String, modifier: Modifier, container: Color = MaterialTheme.colorScheme.surface, content: Color = MaterialTheme.colorScheme.onSurface) {
-    Box(modifier.padding(Spacing.xs).size(20.dp).background(container, CircleShape), Alignment.Center) {
+    Box(modifier.size(22.dp).background(container, CircleShape), Alignment.Center) {
         // 한글 글꼴의 위아래 여백을 잘라 원 정중앙에 맞춤
         Text(
             label,
@@ -203,26 +209,26 @@ private fun Legend() {
     val accent = MaterialTheme.colorScheme.primary
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val small = MaterialTheme.typography.bodySmall
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(R.string.zonemap_legend_low), style = small, color = muted)
-        Box(
-            Modifier
-                .width(56.dp)
-                .height(8.dp)
-                .background(Brush.horizontalGradient(listOf(cellColor(accent, 0f), cellColor(accent, 1f))), CircleShape),
-        )
-        Text(stringResource(R.string.zonemap_legend_high), style = small, color = muted)
-        Box(Modifier.weight(1f))
-        Badge("1", Modifier, MaterialTheme.colorScheme.background)
-        Text(stringResource(R.string.zonemap_legend_rank), style = small, color = muted)
-        Badge(stringResource(R.string.zonemap_station_badge), Modifier, MaterialTheme.colorScheme.onSurface, MaterialTheme.colorScheme.surface)
-        Text(stringResource(R.string.zonemap_station), style = small, color = muted)
+    // 격자 칸과 같은 모양의 견본 5단계. 순위 숫자는 칸 안에서 바로 읽혀 범례에서 뺌
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Text(stringResource(R.string.zonemap_legend_title), style = MaterialTheme.typography.labelMedium, color = muted)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            Text(stringResource(R.string.zonemap_legend_low), style = small, color = muted)
+            repeat(5) { i ->
+                Box(Modifier.size(14.dp).background(cellColor(accent, i / 4f), RoundedCornerShape(4.dp)))
+            }
+            Text(stringResource(R.string.zonemap_legend_high), style = small, color = muted)
+            Box(Modifier.weight(1f))
+            StationPin()
+            Text(stringResource(R.string.zonemap_station), style = small, color = muted)
+        }
     }
 }
 
 /** 고른 구역의 추천 근거(공공데이터 지표 3개)와 근무 시작 */
 @Composable
 private fun ZoneCard(zone: Zone, rank: Int, total: Int, onStart: () -> Unit) {
+    var showInfo by rememberSaveable { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
@@ -242,7 +248,27 @@ private fun ZoneCard(zone: Zone, rank: Int, total: Int, onStart: () -> Unit) {
                         .padding(horizontal = Spacing.s, vertical = 2.dp),
                 )
                 Text(
-                    stringResource(R.string.zonemap_score, "%.2f".format(Locale.US, zone.score)),
+                    stringResource(R.string.zonemap_score, (zone.score * 100).roundToInt()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clickable(role = Role.Button, onClickLabel = stringResource(R.string.zonemap_score_info_desc)) { showInfo = !showInfo },
+                    Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_info),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            if (showInfo) {
+                Text(
+                    stringResource(R.string.zonemap_score_info),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -306,8 +332,8 @@ private fun ZoneMapScreenPreview() {
                 zones = List(36) { Zone(id = "G%02d".format(it), name = "격자 ${it + 1}", score = (it % 5) / 4f, 5523, 3446, 31, 4_493_365_069) },
                 selectedZoneId = "G19",
             ),
-            account = "데모 워커",
-            onSelectZone = {}, onRetry = {}, onStartShift = {}, onSignOut = {},
+            workerName = "이태원 1조",
+            onSelectZone = {}, onRetry = {}, onStartShift = { _, _ -> }, onSignOut = {},
         )
     }
 }

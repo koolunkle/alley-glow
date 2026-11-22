@@ -75,7 +75,7 @@ fun ShopReportScreen(
     /** 청소 전후 사진(JPEG 바이트). 미리보기에서는 null을 돌려줌 */
     loadPhoto: suspend (path: String) -> ByteArray?,
 ) {
-    Scaffold(topBar = { AppTopBar(stringResource(R.string.role_shop), onSignOut) }) { padding ->
+    Scaffold(topBar = { AppTopBar(stringResource(R.string.role_shop), null, onSignOut) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

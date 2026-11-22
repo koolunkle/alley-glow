@@ -27,6 +27,7 @@ private fun style(size: Int, line: Int, weight: FontWeight, tracking: Double = 0
 /** 글자 크기 단계. 화면에서는 이 이름으로만 고르고 크기를 직접 쓰지 않음 */
 val Typography = Typography(
     displayMedium = style(56, 64, FontWeight.Black, -0.02).copy(fontFeatureSettings = "tnum"), // 근무 타이머
+    headlineMedium = style(32, 40, FontWeight.Black, -0.02), // 카드 속 큰 숫자
     headlineSmall = style(24, 32, FontWeight.Black, -0.02),  // 화면 제목
     titleLarge = style(20, 28, FontWeight.Bold, -0.01),      // 카드 제목, 큰 숫자
     titleMedium = style(16, 24, FontWeight.Bold),            // 섹션 제목

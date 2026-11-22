@@ -7,7 +7,8 @@ sealed interface AppRoute {
     /** signOut: 세션을 지우고 로그인 화면으로 */
     @Serializable data class Login(val signOut: Boolean = false) : AppRoute
     @Serializable data object ZoneMap : AppRoute
-    @Serializable data class Shift(val zoneId: String) : AppRoute
+    /** zoneName: 화면 표시용 구역 이름 */
+    @Serializable data class Shift(val zoneId: String, val zoneName: String) : AppRoute
     @Serializable data class Checkin(val shiftId: String, val zoneId: String, val startedAt: Long) : AppRoute
     /** beforePhotos: 근무 화면에서 찍은 청소 전 사진의 기기 내 경로 */
     @Serializable data class Collection(

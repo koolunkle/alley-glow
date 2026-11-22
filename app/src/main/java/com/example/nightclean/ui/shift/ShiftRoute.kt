@@ -12,24 +12,33 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,18 +49,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.nightclean.R
 import com.example.nightclean.domain.model.AdSlot
 import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.currentAt
@@ -59,6 +68,8 @@ import com.example.nightclean.domain.model.nextAfter
 import com.example.nightclean.domain.model.nightHour
 import com.example.nightclean.ui.common.PhotoRow
 import com.example.nightclean.ui.theme.NightCleanTheme
+import com.example.nightclean.ui.theme.Spacing
+import com.example.nightclean.ui.theme.TouchHeight
 import com.example.nightclean.ui.theme.Warning
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -69,6 +80,7 @@ import java.util.Locale
 @Composable
 fun ShiftRoute(
     zoneId: String,
+    zoneName: String,
     onCheckin: (shiftId: String, startedAt: Long) -> Unit,
     onFinish: (shiftId: String, startedAt: Long, beforePhotos: List<String>, bagsByHour: List<Int>) -> Unit,
     viewModel: ShiftViewModel = hiltViewModel(),
@@ -97,7 +109,7 @@ fun ShiftRoute(
         if (!permissionDenied) viewModel.startTracking(zoneId)
     }
     ShiftScreen(
-        zoneId = zoneId,
+        zoneName = zoneName,
         uiState = uiState,
         startedAt = viewModel.startedAt,
         now = now,
@@ -136,7 +148,7 @@ fun ShiftRoute(
 
 @Composable
 fun ShiftScreen(
-    zoneId: String,
+    zoneName: String,
     uiState: ShiftUiState,
     startedAt: Long,
     now: Long,
@@ -166,14 +178,16 @@ fun ShiftScreen(
         )
     }
     Scaffold(
-        // 내용이 길어져도 근무 버튼은 항상 보이게 아래에 고정
+        // 근무 종료는 마지막에 꼭 거쳐야 하는 단계라 연두로 아래에 고정
         bottomBar = {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onCheckin, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-                    Text("가게 체크인 (QR)", fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(onClick = onFinish, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-                    Text("근무 종료 · 수거량 입력", fontWeight = FontWeight.Bold)
+            Box(
+                Modifier
+                    .background(MaterialTheme.colorScheme.background)
+                    .navigationBarsPadding()
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m),
+            ) {
+                Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().height(TouchHeight)) {
+                    Text(stringResource(R.string.shift_finish), style = MaterialTheme.typography.labelLarge)
                 }
             }
         },
@@ -183,75 +197,97 @@ fun ShiftScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = Spacing.l, vertical = Spacing.m),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                Text(
-                    if (isTracking) "근무 중 · GPS 기록 중" else "근무 중",
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("구역 $zoneId", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    // 위급할 때 스크롤 없이 바로 보이도록 맨 위에 둠
-                    OutlinedButton(
-                        onClick = { showEmergency = true },
-                        border = BorderStroke(1.dp, Warning),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Warning),
-                        modifier = Modifier.height(48.dp),
-                    ) { Text("긴급 연락", fontWeight = FontWeight.Bold) }
-                }
+                StatusChip(isTracking)
+                // 위급할 때 스크롤 없이 바로 보이도록 맨 위에 둠
+                EmergencyChip(onClick = { showEmergency = true })
             }
-            ShiftTimer(startedAt, now)
+            ShiftTimer(startedAt, now, zoneName)
             if (!isTracking) TrackingConsent(permissionDenied, onStartTracking)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CountCard("가게 체크인", "${checkinCount}곳", Modifier.weight(1f))
-                CountCard("채운 봉투", "${bagCount}장", Modifier.weight(1f)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(
-                            onClick = onUndoBag,
-                            enabled = bagCount > 0,
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.size(56.dp).semantics { contentDescription = "봉투 하나 되돌리기" },
-                        ) { Text("−") }
-                        Button(
-                            onClick = onAddBag,
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.size(56.dp).semantics { contentDescription = "봉투 하나 채움" },
-                        ) { Text("+1", fontWeight = FontWeight.Black) }
-                    }
+            // 숫자와 그 숫자를 바꾸는 버튼을 한 카드에. 두 카드 높이를 맞춤
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                CounterCard(stringResource(R.string.shift_checkins), stringResource(R.string.shift_checkins_value, checkinCount)) {
+                    Button(
+                        onClick = onCheckin,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.onSurface,
+                            contentColor = MaterialTheme.colorScheme.surface,
+                        ),
+                        contentPadding = PaddingValues(horizontal = Spacing.s),
+                        modifier = Modifier.fillMaxWidth().height(TouchHeight),
+                    ) { Text(stringResource(R.string.shift_checkin), style = MaterialTheme.typography.labelLarge) }
+                }
+                CounterCard(stringResource(R.string.shift_bags), stringResource(R.string.shift_bags_value, bagCount)) {
+                    BagButtons(bagCount, onAddBag, onUndoBag)
                 }
             }
             when (uiState) {
                 ShiftUiState.Loading -> Box(Modifier.fillMaxWidth(), Alignment.Center) { CircularProgressIndicator() }
-                is ShiftUiState.Error -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(uiState.message)
-                    Button(onClick = onRetry) { Text("다시 시도") }
+                ShiftUiState.Error -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text(stringResource(R.string.shift_slots_error))
+                    Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
                 is ShiftUiState.Success -> {
                     val hour = nightHour(now.hourOfDay())
-                    val current = uiState.slots.currentAt(hour)
-                    val next = uiState.slots.nextAfter(hour)
-                    if (current == null && next == null) {
-                        Text("오늘 남은 광고가 없어요", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    current?.let { SlotCard("지금 광고 중", it, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary) }
-                    next?.let { SlotCard("다음 슬롯", it, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface) }
+                    SlotCard(uiState.slots.currentAt(hour), uiState.slots.nextAfter(hour))
                 }
             }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("청소 전 사진 (선택, 최대 ${MAX_BEFORE_AFTER_PHOTOS}장)", fontWeight = FontWeight.Bold)
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text(stringResource(R.string.shift_before_photos), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.optional),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                            .padding(horizontal = Spacing.s, vertical = 2.dp),
+                    )
+                }
                 Text(
-                    "치우기 전에 찍어 두면 근무 종료 때 같은 자리에서 청소 후 사진을 찍어요",
+                    stringResource(R.string.shift_before_photos_caption),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                PhotoRow(beforePhotos, MAX_BEFORE_AFTER_PHOTOS, "청소 전 사진", enabled = true, onAddBeforePhoto, onRemoveBeforePhoto)
+                Spacer(Modifier.height(Spacing.xs))
+                PhotoRow(beforePhotos, MAX_BEFORE_AFTER_PHOTOS, stringResource(R.string.shift_before_photos), enabled = true, onAddBeforePhoto, onRemoveBeforePhoto)
             }
+        }
+    }
+}
+
+/** 근무 상태(연두 점). GPS 기록 중이면 문구에 표시 */
+@Composable
+private fun StatusChip(isTracking: Boolean) {
+    Row(
+        Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+            .padding(horizontal = Spacing.m, vertical = Spacing.s),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+        Text(
+            stringResource(if (isTracking) R.string.shift_status_tracking else R.string.shift_status),
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
+}
+
+/** 긴급 연락. 옅은 주황 칩(터치 영역은 48dp 보장) */
+@Composable
+private fun EmergencyChip(onClick: () -> Unit) {
+    Surface(onClick = onClick, shape = CircleShape, color = Warning.copy(alpha = 0.14f), contentColor = Warning) {
+        Row(
+            Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(painterResource(R.drawable.ic_call), contentDescription = null, modifier = Modifier.size(16.dp))
+            Text(stringResource(R.string.shift_emergency), style = MaterialTheme.typography.labelMedium)
         }
     }
 }
@@ -261,35 +297,57 @@ fun ShiftScreen(
 private fun EmergencyDialog(onDial: (String) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("긴급 연락") },
+        title = { Text(stringResource(R.string.shift_emergency)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("번호를 고르면 전화 앱이 열려요. 통화 버튼을 눌러야 걸려요.")
-                Button(onClick = { onDial("112") }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-                    Text("112 경찰 신고", fontWeight = FontWeight.Bold)
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Text(stringResource(R.string.emergency_body))
+                Button(onClick = { onDial("112") }, modifier = Modifier.fillMaxWidth().height(TouchHeight)) {
+                    Text(stringResource(R.string.emergency_police), style = MaterialTheme.typography.labelLarge)
                 }
-                Button(onClick = { onDial("119") }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-                    Text("119 화재·구급", fontWeight = FontWeight.Bold)
+                Button(onClick = { onDial("119") }, modifier = Modifier.fillMaxWidth().height(TouchHeight)) {
+                    Text(stringResource(R.string.emergency_fire), style = MaterialTheme.typography.labelLarge)
                 }
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("닫기") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
     )
 }
 
-/** 시안의 체크인 수·봉투 수 카드. 봉투는 채울 때마다 지금 시간대 칸에 1장씩 */
+/** 이름, 큰 숫자, 아래쪽 버튼 줄 */
 @Composable
-private fun CountCard(label: String, value: String, modifier: Modifier, actions: (@Composable () -> Unit)? = null) {
+private fun RowScope.CounterCard(label: String, value: String, actions: @Composable () -> Unit) {
     Column(
-        modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .padding(Spacing.l),
     ) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-        actions?.invoke()
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.weight(1f).height(Spacing.l))
+        actions()
+    }
+}
+
+/** 봉투를 채울 때마다 +1(누른 시각의 시간대 칸에 1장). 두 버튼 같은 높이·모양 */
+@Composable
+private fun BagButtons(bagCount: Int, onAdd: () -> Unit, onUndo: () -> Unit) {
+    val undoDesc = stringResource(R.string.shift_bag_undo_desc)
+    val addDesc = stringResource(R.string.shift_bag_add_desc)
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        FilledTonalButton(
+            onClick = onUndo,
+            enabled = bagCount > 0,
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.weight(1f).height(TouchHeight).semantics { contentDescription = undoDesc },
+        ) { Text("−1", style = MaterialTheme.typography.labelLarge) }
+        Button(
+            onClick = onAdd,
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.weight(1f).height(TouchHeight).semantics { contentDescription = addDesc },
+        ) { Text("+1", style = MaterialTheme.typography.labelLarge) }
     }
 }
 
@@ -299,55 +357,83 @@ private fun TrackingConsent(permissionDenied: Boolean, onStart: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .padding(start = Spacing.l, end = Spacing.m, top = Spacing.m, bottom = Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Text("위치 기록 동의", fontWeight = FontWeight.Bold)
-        Text(
-            "근무 중에만 30초마다 위치를 기록하고, 근무를 마치면 멈춰요. 담당 구역에서 일했는지 확인하는 데만 써요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(R.string.shift_consent_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.shift_consent_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Button(onClick = onStart, contentPadding = PaddingValues(horizontal = Spacing.l), modifier = Modifier.height(48.dp)) {
+                Text(stringResource(R.string.shift_consent_start), style = MaterialTheme.typography.labelMedium)
+            }
+        }
         if (permissionDenied) {
-            Text("정확한 위치 권한이 있어야 기록할 수 있어요.", style = MaterialTheme.typography.bodySmall, color = Warning)
-        }
-        Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-            Text("동의하고 GPS 기록 시작", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.shift_consent_denied), style = MaterialTheme.typography.bodySmall, color = Warning)
         }
     }
 }
 
 @Composable
-private fun ShiftTimer(startedAt: Long, now: Long) {
+private fun ShiftTimer(startedAt: Long, now: Long, zoneName: String) {
     val minutes = ((now - startedAt) / 60_000).coerceAtLeast(0)
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("근무 시간", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("%02d:%02d".format(minutes / 60, minutes % 60), fontSize = 56.sp, fontWeight = FontWeight.Black)
+    Column(Modifier.fillMaxWidth().padding(vertical = Spacing.s), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(stringResource(R.string.shift_elapsed), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("%02d:%02d".format(minutes / 60, minutes % 60), style = MaterialTheme.typography.displayMedium)
         Text(
-            "${SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(startedAt))} 시작",
+            stringResource(R.string.shift_started, SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(startedAt)), zoneName),
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
+/** 지금 광고(작은 연두 라벨 + 가게명)와 다음 광고 한 줄을 한 카드에 */
 @Composable
-private fun SlotCard(label: String, slot: AdSlot, container: Color, content: Color) {
+private fun SlotCard(current: AdSlot?, next: AdSlot?) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(container, RoundedCornerShape(20.dp))
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .padding(Spacing.l),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Text(
-            "$label · ${slot.startHour % 24}–${slot.endHour % 24}시",
-            color = content,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(slot.shopName, color = content, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
-        Text(slot.placement, color = content, style = MaterialTheme.typography.bodySmall)
+        if (current == null && next == null) {
+            Text(stringResource(R.string.shift_slots_none), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@Column
+        }
+        current?.let { slot ->
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(
+                    stringResource(R.string.shift_slot_now, slot.startHour % 24, slot.endHour % 24),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .padding(horizontal = Spacing.s, vertical = 2.dp),
+                )
+                Text(slot.shopName, style = MaterialTheme.typography.headlineSmall)
+                Text(slot.placement, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        next?.let { slot ->
+            if (current != null) HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.shift_slot_next, slot.startHour % 24, slot.endHour % 24),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(96.dp),
+                )
+                Text(slot.shopName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            }
+        }
     }
 }
 
@@ -361,7 +447,7 @@ private fun ShiftScreenPreview() {
     val hour = nightHour(now.hourOfDay())
     NightCleanTheme {
         ShiftScreen(
-            zoneId = "G14",
+            zoneName = "이태원 관광특구 4",
             uiState = ShiftUiState.Success(
                 listOf(
                     AdSlot("[가게명 1]", hour, hour + 1, "등판 조끼 · 수거통 옆면"),

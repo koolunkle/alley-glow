@@ -89,7 +89,7 @@ class ShiftViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = repository.getAdSlots().fold(
                 onSuccess = { ShiftUiState.Success(it) },
-                onFailure = { ShiftUiState.Error("광고 일정을 불러오지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.") },
+                onFailure = { ShiftUiState.Error },
             )
         }
     }
