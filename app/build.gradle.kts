@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Supabase 접속 정보와 release 서명: local.properties(git 제외)
+val local = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+
 android {
     namespace = "com.example.nightclean"
     compileSdk {
@@ -23,19 +28,27 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Supabase 접속 정보: local.properties(git 제외)에서 주입
-        val local = Properties().apply {
-            rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
-        }
         buildConfigField("String", "SUPABASE_URL", "\"${local.getProperty("supabase.url", "")}\"")
         buildConfigField("String", "SUPABASE_KEY", "\"${local.getProperty("supabase.key", "")}\"")
     }
 
+    signingConfigs {
+        local.getProperty("release.storeFile")?.let { path ->
+            create("release") {
+                storeFile = file(path)
+                storePassword = local.getProperty("release.storePassword")
+                keyAlias = "nightclean"
+                keyPassword = local.getProperty("release.storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
+            // shortcut: R8 끔(packageScope 최적화가 kotlin 클래스 접근을 깨 시작 즉시 종료), APK 크기를 줄일 때 keep 규칙과 함께 켬
             optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                enable = false
             }
         }
     }
