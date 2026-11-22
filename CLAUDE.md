@@ -10,11 +10,12 @@
 - `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], weighed, general_kg·recycle_kg·butts_g(weighed=false면 모두 null, check 제약), note, photo_paths text[] 0~3, before_photo_paths·after_photo_paths text[] 각 0~2)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
 - Storage `collection-photos`(비공개, JPEG 5MB): 근무 종료 사진(저울을 쓰면 저울 눈금, 아니면 채운 봉투). 경로 `{user_id}/{shift_id}/photo-{n}.jpg`, 청소 전후는 `before-{n}.jpg`·`after-{n}.jpg`, 워커 본인 폴더만 쓰기·읽기·덮어쓰기. 상인은 자기 가게에 체크인한 근무의 청소 전후 사진만 읽는다(봉투·저울 사진 제외, 판정은 API에 노출되지 않는 `private.shop_can_read_photo`). 앱은 `/storage/v1/object/authenticated/...`로 로그인 토큰을 실어 내려받는다. 근무 종료 때 EXIF 방향을 반영해(`image/decodeUpright`, 썸네일도 같이 씀) 긴 변 1600px JPEG로 줄이고 `x-upsert`로 올리므로 재시도해도 같은 파일. 앱은 1장 이상을 요구하고, 시연용 예시 행은 비어 있다. Storage 파일은 SQL이 아니라 대시보드나 Storage API로 지운다.
 - 상인 리포트의 kg은 저울로 잰 행만 더한다(null은 sum에서 빠짐). 저울 없는 근무의 추정 무게는 저장하지 않는다.
-- `public.shops(id, name, lat, lng, qr_code unique)`: anon/authenticated 읽기. 지금은 이태원역 주변 예시 5곳(`NC-SHOP-001`~`005`). QR 값이 URL이면 마지막 경로를 가게 코드로 쓴다.
+- `public.shops(id, name, lat, lng, qr_code unique, intro, menu, benefit)`: anon/authenticated 읽기. 지금은 이태원역 주변 예시 5곳(`NC-SHOP-001`~`005`), 소개·메뉴·혜택은 `[대괄호]` 자리표시. 가게 QR 값은 QR 랜딩 주소(`…/?s=NC-SHOP-001`)이고, 앱은 `s` 값(그 밖의 URL이면 마지막 경로)을 가게 코드로 쓴다.
+- `public.qr_scans(id uuid, shop_id, scanned_at, score 1~5)`: 시민의 QR 랜딩 방문과 청결도 평가. 익명은 테이블에 접근하지 못하고 `rpc/qr_visit`(가게 정보 + 스캔 기록, 모르는 코드면 null)과 `rpc/qr_rate`(스캔당 1번, 하루 안)만 쓴다.
 - `public.checkins(shift_id → shifts, shop_id → shops, checked_at, lat, lng, distance_m 0~50, unique(shift_id, shop_id))`: 직접 쓰기 권한 없음. `rpc/check_in`(security definer)만 쓴다. 이 함수가 워커 확인 → 근무 행 보장 → QR로 가게 조회 → 하버사인 거리 50m 이하면 기록까지 한다. 모르는 QR이면 빈 결과.
 - `public.track_points(shift_id → shifts, recorded_at, lat, lng, accuracy_m)`: 근무 중 GPS. 워커 본인 근무에만 쓰고 읽는다. 앱의 `data/tracking/LocationTrackingService`(위치 타입 포그라운드 서비스)가 30초마다 받아 5개씩(약 2분 30초마다) 올리고, 올리기 전에 근무 행이 없으면 종료 시각 없이 만든다(ignore-duplicates). 근무 화면의 ViewModel이 사라질 때(근무 종료 저장 또는 화면 이탈) 멈춘다.
 - `public.guest_visits(shop_id, created_at)`: "클린 보고 왔어요" 손님 +1. 상인 본인 가게만 쓰고 읽는다.
-- `rpc/shop_report`(GET, security definer): 호출한 상인 가게의 이번 달 집계 JSON(청소한 밤, 들른 근무의 수거량 kg, 손님 수, 최근 5밤과 밤마다 청소 전·후 사진 경로 1장씩). 서울 시각 기준이고 밤 날짜는 '서울 시각 − 6시간'. 상인이 아니면 null. 상인에게 워커 테이블을 열지 않으려고 함수로 둔다.
+- `rpc/shop_report`(GET, security definer): 호출한 상인 가게의 이번 달 집계 JSON(청소한 밤, 들른 근무의 수거량 kg, 손님 수, QR 스캔 수, 청결도 평균, 최근 5밤과 밤마다 청소 전·후 사진 경로 1장씩). 서울 시각 기준이고 밤 날짜는 '서울 시각 − 6시간'. 상인이 아니면 null. 상인에게 워커 테이블을 열지 않으려고 함수로 둔다.
 - 시연용 예시 데이터: 11/13·14·20·21(금·토) 19~23시 근무 4건, 수거량 4건(특이사항 `[시연용 예시]`), 체크인 10건, 데모 상인 가게 손님 7건. 근무 id는 `00000000-0000-4000-8000-` 접두. 실제 시범 데이터와 섞이지 않게 본선 뒤나 실측 데이터를 넣기 전에 지운다: `delete from public.shifts where id::text like '00000000-0000-4000-8000-%';`(수거량·체크인은 cascade) 그리고 `delete from public.guest_visits where created_at < '2026-11-22';`
 - 쓰기가 필요한 테이블은 `authenticated` + `auth.uid()` 기준 RLS로 연다. anon 쓰기는 열지 않는다(시민 QR 웹 제외).
 - 접속 정보는 `local.properties`의 `supabase.url`, `supabase.key`(publishable key)에서 BuildConfig로 들어간다. git에 올리지 않는다.
@@ -39,8 +40,8 @@
 | 2. 근무 중 | Shift | 근무 시간 타이머, 위치 기록 동의 → GPS 기록(상단 '근무 중 · GPS 기록 중', 알림), 현재·다음 광고 슬롯(ad_slots), 청소 전 사진(선택 0~2장), 하단 고정 버튼 | 체크인 수, 봉투 수, 긴급 연락, 기록 경로 표시·구역 이탈 비율 |
 | 3. 가게 체크인 | Checkin | QR 스캔(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 완료·거리 초과·모르는 QR 안내 | 이번 슬롯 체크인 목록, 근무 화면의 체크인 수 |
 | 4. 근무 종료·수거량 입력 | Collection | 시간대별 봉투 수, 저울 사용 여부(기본 '저울 없음' → 봉투 수 × 6kg 추정 표시), 저울 사용 시 종류별 무게, 사진(필수 1~3장, 시스템 카메라, EXIF 방향 반영), 청소 후 사진(선택 0~2장), 특이사항, 예상 수입(시급·꽁초 보상은 저울 사용 시만), shifts·collections·Storage 저장 | 앱 프로세스가 재생성되면 입력 중인 폼(무게·봉투 수·사진) 초기화 |
-| 5. 상인 리포트 | ShopReport | 이번 달 청소한 밤, 치운 쓰레기(들른 근무 중 저울로 잰 양), 손님 +1 기록, 최근 청소 기록(밤마다 청소 전·후 썸네일), 로그아웃 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), QR 스캔 수(QR 랜딩 웹 이후), 사진 크게 보기 |
-| 6. QR 랜딩 웹(시민) | 없음 | 없음 | 앱이 아닌 웹 페이지. 이 저장소에서 만들지 미정 |
+| 5. 상인 리포트 | ShopReport | 이번 달 청소한 밤, 치운 쓰레기(들른 근무 중 저울로 잰 양), QR 스캔 수, 거리 청결도(랜딩 평가 평균), 손님 +1 기록, 최근 청소 기록(밤마다 청소 전·후 썸네일), 로그아웃 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), 사진 크게 보기 |
+| 6. QR 랜딩 웹(시민) | `web/index.html` | 가게 이름·소개·메뉴, 오늘의 혜택과 암호, 카카오맵 길찾기, 청결도 평가 1~5, 스캔 기록. GitHub Pages(`.github/workflows/pages.yml`) | 가게 대표 사진, 현재 위치에서의 거리 |
 
 - 사진 촬영과 썸네일은 `ui/common/PhotoRow` 하나를 쓴다(시스템 카메라, 캐시 photos/, EXIF 방향 반영). 업로드는 근무 종료 저장 때 한 번에.
 - 화면 이동: 로그인 → 지도(워커) 또는 상인 리포트(상인). 로그아웃은 스택을 비우고 로그인으로. 지도 → 근무 → 체크인(뒤로) / 근무 종료 → 지도(근무 기록은 스택에서 지움). 실제 기기에서 확인했다.
@@ -73,7 +74,12 @@
 ## 정하지 않은 것
 - 사전 개발 허용 여부: 규칙은 개발을 '본선 무박 2일' 활동으로 적고, 메모는 허용될 때만 코드를 쓰기로 했다. 운영팀 답을 아직 못 받았다(11/21 기준).
 - 서비스 이름: 시안은 "클린나이트", PRD·메모·앱은 "야간 클린 워커".
-- QR 랜딩 웹을 어디서 만들고 호스팅할지.
+
+## QR 랜딩 웹
+- 정적 HTML 1장(`web/index.html`), 라이브러리 없음. 가게 정보는 `textContent`로만 넣는다.
+- Supabase 접속 정보는 `web/config.js`(git 제외, 예시는 `config.example.js`). 배포는 `main`에 `web/`가 바뀌면 GitHub Actions가 Secrets(`SUPABASE_URL`, `SUPABASE_KEY`)로 `config.js`를 만들어 Pages에 올린다.
+- 로컬 확인: `web/config.js`를 만든 뒤 `web/index.html?s=NC-SHOP-001`을 브라우저로 연다.
+- 저장소는 Pages 배포를 위해 공개한다. 커밋 작성자 이메일은 GitHub noreply 주소를 쓴다(저장소 로컬 `user.email`).
 
 ## 빌드·실행
 - `./gradlew.bat assembleDebug testDebugUnitTest`
