@@ -12,7 +12,7 @@ class ZoneRemoteDataSource @Inject constructor(
     private val client: HttpClient,
 ) {
     suspend fun fetchZones(): List<ZoneDto> = client.get("zones") {
-        parameter("select", "grid_id,name,score")
+        parameter("select", "grid_id,name,score,night_pop,weekday_pop,bin_dist_m,night_sales")
         parameter("order", "grid_id")
     }.body()
 }
