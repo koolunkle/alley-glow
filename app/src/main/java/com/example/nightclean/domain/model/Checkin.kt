@@ -10,5 +10,9 @@ sealed interface CheckinResult {
     data class UnknownShop(val shopCode: String) : CheckinResult
 }
 
-/** QR 값에서 가게 코드 추출. URL이면 마지막 경로 */
-fun shopCodeOf(qr: String): String = qr.trim().trimEnd('/').substringAfterLast('/')
+/** QR 값에서 가게 코드 추출. 랜딩 URL(…/?s=코드)이면 s 값, 그 밖의 URL이면 마지막 경로, 아니면 그대로 */
+fun shopCodeOf(qr: String): String {
+    val text = qr.trim()
+    Regex("[?&]s=([^&#]+)").find(text)?.let { return it.groupValues[1] }
+    return text.trimEnd('/').substringAfterLast('/')
+}

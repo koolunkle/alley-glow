@@ -14,6 +14,8 @@ data class ShopReportDto(
     val nights: Int,
     @SerialName("collected_kg") val collectedKg: Double,
     val guests: Int,
+    @SerialName("qr_scans") val qrScans: Int = 0,
+    @SerialName("clean_score") val cleanScore: Double? = null,
     val recent: List<NightRecordDto>,
 )
 
@@ -38,5 +40,7 @@ fun ShopReportDto.toShopReport() = ShopReport(
     nights = nights,
     collectedKg = collectedKg,
     guests = guests,
+    qrScans = qrScans,
+    cleanScore = cleanScore,
     recent = recent.map { NightRecord(it.night, it.checkins, it.firstAt, it.lastAt, it.beforePhoto, it.afterPhoto) },
 )
