@@ -25,7 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.UserRole
+import com.example.nightclean.R
 import com.example.nightclean.ui.theme.NightCleanTheme
 
 @Composable
@@ -76,12 +77,12 @@ fun LoginScreen(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("야간 클린 워커", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-            Text("운영자가 발급한 계정으로 로그인하세요", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.login_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = { Text("이메일") },
+                label = { Text(stringResource(R.string.login_email)) },
                 singleLine = true,
                 enabled = !uiState.isSubmitting,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
@@ -90,7 +91,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = onPasswordChange,
-                label = { Text("비밀번호") },
+                label = { Text(stringResource(R.string.login_password)) },
                 singleLine = true,
                 enabled = !uiState.isSubmitting,
                 visualTransformation = PasswordVisualTransformation(),
@@ -107,7 +108,7 @@ fun LoginScreen(
                 if (uiState.isSubmitting) {
                     CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("로그인", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.login_submit))
                 }
             }
         }

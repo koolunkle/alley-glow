@@ -1,3 +1,15 @@
 <resources>
-    <string name="app_name">NightClean</string>
+    <!-- 공통 -->
+    <string name="app_name">Night Clean</string>
+    <string name="role_worker">워커</string>
+    <string name="role_shop">상인</string>
+    <string name="account_menu">계정 메뉴</string>
+    <string name="sign_out">로그아웃</string>
+    <string name="retry">다시 시도</string>
+
+    <!-- 로그인 -->
+    <string name="login_subtitle">운영자가 발급한 계정으로 로그인</string>
+    <string name="login_email">이메일</string>
+    <string name="login_password">비밀번호</string>
+    <string name="login_submit">로그인</string>
 </resources>

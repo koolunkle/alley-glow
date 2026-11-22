@@ -23,7 +23,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -31,14 +30,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.nightclean.R
 import com.example.nightclean.domain.model.Zone
+import com.example.nightclean.ui.common.AppTopBar
 import com.example.nightclean.ui.checkin.formatDistance
 import com.example.nightclean.ui.theme.NightCleanTheme
 import java.util.Locale
@@ -73,7 +76,7 @@ fun ZoneMapScreen(
     onStartShift: (String) -> Unit,
     onSignOut: () -> Unit,
 ) {
-    Scaffold { padding ->
+    Scaffold(topBar = { AppTopBar(stringResource(R.string.role_worker), onSignOut) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -106,7 +109,6 @@ fun ZoneMapScreen(
                     } ?: Text("격자를 눌러 근무할 구역을 고르세요", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            TextButton(onClick = onSignOut) { Text("로그아웃") }
             Text(SOURCE, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -149,7 +151,15 @@ private fun ZoneGrid(zones: List<Zone>, ranks: Map<String, Int>, selectedZoneId:
 @Composable
 private fun Badge(label: String, modifier: Modifier, container: Color = MaterialTheme.colorScheme.surface, content: Color = MaterialTheme.colorScheme.onSurface) {
     Box(modifier.padding(4.dp).size(20.dp).background(container, CircleShape), Alignment.Center) {
-        Text(label, color = content, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        // 한글 글꼴의 위아래 여백을 잘라 원 정중앙에 맞춤
+        Text(
+            label,
+            color = content,
+            style = MaterialTheme.typography.labelSmall.copy(
+                lineHeight = 11.sp,
+                lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+            ),
+        )
     }
 }
 

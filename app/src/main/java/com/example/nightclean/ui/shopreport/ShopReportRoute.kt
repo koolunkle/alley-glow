@@ -21,7 +21,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -31,13 +30,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.nightclean.R
 import com.example.nightclean.domain.model.NightRecord
+import com.example.nightclean.ui.common.AppTopBar
 import com.example.nightclean.domain.model.ShopReport
 import com.example.nightclean.ui.theme.NightCleanTheme
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +75,7 @@ fun ShopReportScreen(
     /** 청소 전후 사진(JPEG 바이트). 미리보기에서는 null을 돌려줌 */
     loadPhoto: suspend (path: String) -> ByteArray?,
 ) {
-    Scaffold { padding ->
+    Scaffold(topBar = { AppTopBar(stringResource(R.string.role_shop), onSignOut) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,7 +95,6 @@ fun ShopReportScreen(
                 }
                 is ShopReportUiState.Success -> Report(uiState, onAddGuest, loadPhoto)
             }
-            TextButton(onClick = onSignOut) { Text("로그아웃") }
         }
     }
 }
