@@ -9,6 +9,8 @@ data class CollectionForm(
     val recycleKg: String = "",
     val buttsG: String = "",
     val note: String = "",
+    /** 저울 사진의 기기 내 파일 경로 */
+    val scalePhotos: List<String> = emptyList(),
 )
 
 sealed interface CollectionUiState {

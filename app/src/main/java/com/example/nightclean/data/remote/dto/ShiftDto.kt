@@ -26,6 +26,8 @@ data class CollectionDto(
     @SerialName("recycle_kg") val recycleKg: Double,
     @SerialName("butts_g") val buttsG: Double,
     val note: String?,
+    /** Storage 경로(버킷 제외) */
+    @SerialName("scale_photo_paths") val scalePhotoPaths: List<String>,
 )
 
 fun ShiftRecord.toShiftDto() = ShiftDto(
@@ -35,13 +37,14 @@ fun ShiftRecord.toShiftDto() = ShiftDto(
     endedAt = endedAt.toIsoUtc(),
 )
 
-fun ShiftRecord.toCollectionDto() = CollectionDto(
+fun ShiftRecord.toCollectionDto(scalePhotoPaths: List<String>) = CollectionDto(
     shiftId = shiftId,
     bagsByHour = bagsByHour,
     generalKg = generalKg,
     recycleKg = recycleKg,
     buttsG = buttsG,
     note = note,
+    scalePhotoPaths = scalePhotoPaths,
 )
 
 /** minSdk 24라 java.time 대신 SimpleDateFormat */

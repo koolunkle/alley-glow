@@ -3,6 +3,7 @@ package com.example.nightclean.ui.collection
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nightclean.domain.model.MAX_SCALE_PHOTOS
 import com.example.nightclean.domain.model.ShiftRecord
 import com.example.nightclean.domain.repository.ShiftRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,6 +40,12 @@ class CollectionViewModel @Inject constructor(
     fun changeButtsG(value: String) = edit { it.copy(buttsG = value) }
     fun changeNote(value: String) = edit { it.copy(note = value.take(MAX_NOTE)) }
 
+    fun addScalePhoto(path: String) = edit { form ->
+        if (form.scalePhotos.size < MAX_SCALE_PHOTOS) form.copy(scalePhotos = form.scalePhotos + path) else form
+    }
+
+    fun removeScalePhoto(index: Int) = edit { it.copy(scalePhotos = it.scalePhotos.filterIndexed { i, _ -> i != index }) }
+
     fun submit() {
         val state = _uiState.value as? CollectionUiState.Editing ?: return
         if (state.isSubmitting) return
@@ -48,6 +55,10 @@ class CollectionViewModel @Inject constructor(
         val buttsG = form.buttsG.toWeight(MAX_G)
         if (generalKg == null || recycleKg == null || buttsG == null) {
             _uiState.value = state.copy(error = "무게를 숫자로 입력해 주세요. 없으면 0을 적어 주세요.")
+            return
+        }
+        if (form.scalePhotos.isEmpty()) {
+            _uiState.value = state.copy(error = "저울 사진을 1장 이상 찍어 주세요.")
             return
         }
         val record = ShiftRecord(
@@ -60,12 +71,13 @@ class CollectionViewModel @Inject constructor(
             recycleKg = recycleKg,
             buttsG = buttsG,
             note = form.note.trim().ifEmpty { null },
+            scalePhotos = form.scalePhotos,
         )
         _uiState.value = state.copy(isSubmitting = true, error = null)
         viewModelScope.launch {
             _uiState.value = repository.finishShift(record).fold(
                 onSuccess = { CollectionUiState.Submitted },
-                onFailure = { state.copy(error = "저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.") },
+                onFailure = { state.copy(error = "저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요. 사진은 그대로 남아 있어요.") },
             )
         }
     }

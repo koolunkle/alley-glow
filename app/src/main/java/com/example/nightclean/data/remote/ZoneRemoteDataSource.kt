@@ -7,7 +7,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import javax.inject.Inject
 
-// shortcut: 인증만 supabase-kt, PostgREST는 Ktor로 직접 호출. Storage 도입 시 supabase-kt로 통일 검토
+// shortcut: 인증만 supabase-kt, PostgREST·Storage는 Ktor로 직접 호출. 실시간 구독 등 기능이 늘면 supabase-kt로 통일 검토
 class ZoneRemoteDataSource @Inject constructor(
     private val client: HttpClient,
 ) {

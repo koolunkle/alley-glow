@@ -1,6 +1,11 @@
 package com.example.nightclean.ui.collection
 
+import android.graphics.BitmapFactory
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,14 +26,25 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -36,13 +52,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.BAG_SLOT_HOURS
 import com.example.nightclean.domain.model.BUTT_REWARD_WON_PER_GRAM
 import com.example.nightclean.domain.model.HOURLY_WAGE_WON
+import com.example.nightclean.domain.model.MAX_SCALE_PHOTOS
 import com.example.nightclean.domain.model.estimateIncome
 import com.example.nightclean.ui.theme.NightCleanTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 fun CollectionRoute(
@@ -53,6 +74,14 @@ fun CollectionRoute(
     LaunchedEffect(uiState) {
         if (uiState is CollectionUiState.Submitted) onSubmitted()
     }
+    val context = LocalContext.current
+    // 촬영 중 화면이 재생성돼도 저장할 파일 경로를 잃지 않게
+    var pendingPhoto by rememberSaveable { mutableStateOf<String?>(null) }
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val path = pendingPhoto ?: return@rememberLauncherForActivityResult
+        pendingPhoto = null
+        if (saved) viewModel.addScalePhoto(path) else File(path).delete()
+    }
     (uiState as? CollectionUiState.Editing)?.let { editing ->
         CollectionScreen(
             uiState = editing,
@@ -62,6 +91,13 @@ fun CollectionRoute(
             onRecycleKgChange = viewModel::changeRecycleKg,
             onButtsGChange = viewModel::changeButtsG,
             onNoteChange = viewModel::changeNote,
+            onTakeScalePhoto = {
+                // 시스템 카메라로만 촬영(갤러리 선택 불가). 파일은 캐시의 photos/에
+                val file = File(File(context.cacheDir, "photos").apply { mkdirs() }, "scale-${System.currentTimeMillis()}.jpg")
+                pendingPhoto = file.path
+                takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+            },
+            onRemoveScalePhoto = viewModel::removeScalePhoto,
             onSubmit = viewModel::submit,
         )
     }
@@ -76,6 +112,8 @@ fun CollectionScreen(
     onRecycleKgChange: (String) -> Unit,
     onButtsGChange: (String) -> Unit,
     onNoteChange: (String) -> Unit,
+    onTakeScalePhoto: () -> Unit,
+    onRemoveScalePhoto: (Int) -> Unit,
     onSubmit: () -> Unit,
 ) {
     val form = uiState.form
@@ -103,6 +141,29 @@ fun CollectionScreen(
                 WeightField("일반 (kg)", form.generalKg, enabled, onGeneralKgChange, Modifier.weight(1f))
                 WeightField("재활용 (kg)", form.recycleKg, enabled, onRecycleKgChange, Modifier.weight(1f))
                 WeightField("꽁초 (g)", form.buttsG, enabled, onButtsGChange, Modifier.weight(1f))
+            }
+
+            Section {
+                Text("저울 사진 (필수, 최대 ${MAX_SCALE_PHOTOS}장)", fontWeight = FontWeight.Bold)
+                Text(
+                    "봉투를 저울에 올리고 눈금이 보이게 찍어 주세요",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    form.scalePhotos.forEachIndexed { index, path ->
+                        PhotoThumb(path, "저울 사진 ${index + 1}", enabled) { onRemoveScalePhoto(index) }
+                    }
+                    if (form.scalePhotos.size < MAX_SCALE_PHOTOS) {
+                        OutlinedButton(
+                            onClick = onTakeScalePhoto,
+                            enabled = enabled,
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.size(88.dp),
+                        ) { Text("촬영\n${form.scalePhotos.size}/${MAX_SCALE_PHOTOS}", textAlign = TextAlign.Center) }
+                    }
+                }
             }
 
             OutlinedTextField(
@@ -176,6 +237,22 @@ private fun BagStepper(label: String, count: Int, enabled: Boolean, onChange: (I
     }
 }
 
+/** 촬영한 사진 미리보기. 원본을 작게 디코딩(IO 스레드) */
+@Composable
+private fun PhotoThumb(path: String, label: String, enabled: Boolean, onRemove: () -> Unit) {
+    val image by produceState<ImageBitmap?>(null, path) {
+        value = withContext(Dispatchers.IO) {
+            BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = 16 })?.asImageBitmap()
+        }
+    }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(88.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.background)) {
+            image?.let { Image(it, contentDescription = label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+        }
+        TextButton(onClick = onRemove, enabled = enabled) { Text("삭제") }
+    }
+}
+
 @Composable
 private fun WeightField(label: String, value: String, enabled: Boolean, onChange: (String) -> Unit, modifier: Modifier) {
     OutlinedTextField(
@@ -210,7 +287,7 @@ private fun CollectionScreenPreview() {
             ),
             workedMinutes = 240,
             onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {}, onButtsGChange = {},
-            onNoteChange = {}, onSubmit = {},
+            onNoteChange = {}, onTakeScalePhoto = {}, onRemoveScalePhoto = {}, onSubmit = {},
         )
     }
 }

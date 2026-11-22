@@ -1,5 +1,6 @@
 package com.example.nightclean.data.repository
 
+import com.example.nightclean.data.remote.PhotoRemoteDataSource
 import com.example.nightclean.data.remote.ShiftRemoteDataSource
 import com.example.nightclean.data.remote.dto.toCollectionDto
 import com.example.nightclean.data.remote.dto.toShiftDto
@@ -10,12 +11,16 @@ import javax.inject.Inject
 
 class ShiftRepositoryImpl @Inject constructor(
     private val remote: ShiftRemoteDataSource,
+    private val photos: PhotoRemoteDataSource,
 ) : ShiftRepository {
 
-    // collections가 shifts를 참조하므로 근무 먼저 저장
+    // 근무 → 사진 → 수거량 순서(collections가 shifts를 참조하고 사진 경로를 담음)
     override suspend fun finishShift(record: ShiftRecord): Result<Unit> = try {
         remote.upsertShift(record.toShiftDto())
-        remote.insertCollection(record.toCollectionDto())
+        val photoPaths = record.scalePhotos.mapIndexed { i, local ->
+            photos.upload(local, "${record.shiftId}/scale-${i + 1}.jpg")
+        }
+        remote.insertCollection(record.toCollectionDto(photoPaths))
         Result.success(Unit)
     } catch (e: CancellationException) {
         throw e

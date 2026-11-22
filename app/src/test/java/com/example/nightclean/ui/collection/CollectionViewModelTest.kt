@@ -77,9 +77,10 @@ class CollectionViewModelTest {
         vm.changeBags(slot = 1, delta = 1)
         vm.fillWeights(general = "12,5")
         vm.changeNote("  ")
+        vm.addScalePhoto("/cache/photos/a.jpg")
         vm.submit()
         assertEquals(
-            ShiftRecord("s1", "G01", 1_000L, 5_000L, listOf(0, 1, 0, 0), 12.5, 3.0, 250.0, note = null),
+            ShiftRecord("s1", "G01", 1_000L, 5_000L, listOf(0, 1, 0, 0), 12.5, 3.0, 250.0, note = null, scalePhotos = listOf("/cache/photos/a.jpg")),
             repo.saved,
         )
         assertEquals(CollectionUiState.Submitted, vm.uiState.value)
@@ -89,8 +90,29 @@ class CollectionViewModelTest {
     fun `저장에 실패하면 입력값을 유지하고 안내한다`() {
         val vm = viewModel(FakeShifts(Result.failure(IllegalStateException())))
         vm.fillWeights()
+        vm.addScalePhoto("/cache/photos/a.jpg")
         vm.submit()
         assertEquals("12.5", vm.editing.form.generalKg)
-        assertEquals("저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.", vm.editing.error)
+        assertEquals(listOf("/cache/photos/a.jpg"), vm.editing.form.scalePhotos)
+        assertEquals("저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요. 사진은 그대로 남아 있어요.", vm.editing.error)
+    }
+
+    @Test
+    fun `저울 사진이 없으면 저장하지 않고 안내한다`() {
+        val repo = FakeShifts()
+        val vm = viewModel(repo)
+        vm.fillWeights()
+        vm.submit()
+        assertNull(repo.saved)
+        assertEquals("저울 사진을 1장 이상 찍어 주세요.", vm.editing.error)
+    }
+
+    @Test
+    fun `저울 사진은 3장까지 담기고 지울 수 있다`() {
+        val vm = viewModel(FakeShifts())
+        listOf("a", "b", "c", "d").forEach(vm::addScalePhoto)
+        assertEquals(listOf("a", "b", "c"), vm.editing.form.scalePhotos)
+        vm.removeScalePhoto(1)
+        assertEquals(listOf("a", "c"), vm.editing.form.scalePhotos)
     }
 }

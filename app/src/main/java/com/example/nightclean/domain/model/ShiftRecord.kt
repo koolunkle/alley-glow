@@ -14,4 +14,8 @@ data class ShiftRecord(
     val recycleKg: Double,
     val buttsG: Double,
     val note: String?,
+    /** 저울 사진의 기기 내 파일 경로(1~3장). 저장할 때 업로드 */
+    val scalePhotos: List<String>,
 )
+
+const val MAX_SCALE_PHOTOS = 3
