@@ -8,7 +8,7 @@
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement)`: 근무 중 광고 슬롯. 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 본인 행만 읽기(`auth.uid()`). 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게. 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
 - `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], weighed, general_kg·recycle_kg·butts_g(weighed=false면 모두 null, check 제약), note, photo_paths text[] 0~3, before_photo_paths·after_photo_paths text[] 각 0~2)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
-- Storage `collection-photos`(비공개, JPEG 5MB): 근무 종료 사진(저울을 쓰면 저울 눈금, 아니면 채운 봉투). 경로 `{user_id}/{shift_id}/photo-{n}.jpg`, 청소 전후는 `before-{n}.jpg`·`after-{n}.jpg`, 워커 본인 폴더만 쓰기·읽기·덮어쓰기. 상인은 자기 가게에 체크인한 근무의 청소 전후 사진만 읽는다(봉투·저울 사진 제외, 판정은 API에 노출되지 않는 `private.shop_can_read_photo`). 앱은 `/storage/v1/object/authenticated/...`로 로그인 토큰을 실어 내려받는다. 근무 종료 때 EXIF 방향을 반영해(`image/decodeUpright`, 썸네일도 같이 씀) 긴 변 1600px JPEG로 줄이고 `x-upsert`로 올리므로 재시도해도 같은 파일. 앱은 1장 이상을 요구한다. 시연용 예시 행은 봉투·저울 사진 없이 청소 전·후 각 1장(`before-1.jpg`·`after-1.jpg`, "시연용 예시" 표기 그림, 실사 아님)만 있다. Storage 파일은 SQL이 아니라 대시보드나 Storage API로 지운다.
+- Storage `collection-photos`(비공개, JPEG 5MB): 근무 종료 사진(채운 봉투, 저울을 썼으면 눈금도 함께). 경로 `{user_id}/{shift_id}/photo-{n}.jpg`, 청소 전후는 `before-{n}.jpg`·`after-{n}.jpg`, 워커 본인 폴더만 쓰기·읽기·덮어쓰기. 상인은 자기 가게에 체크인한 근무의 청소 전후 사진만 읽는다(봉투·저울 사진 제외, 판정은 API에 노출되지 않는 `private.shop_can_read_photo`). 앱은 `/storage/v1/object/authenticated/...`로 로그인 토큰을 실어 내려받는다. 근무 종료 때 EXIF 방향을 반영해(`image/decodeUpright`, 썸네일도 같이 씀) 긴 변 1600px JPEG로 줄이고 `x-upsert`로 올리므로 재시도해도 같은 파일. 앱은 1장 이상을 요구한다. 시연용 예시 행은 봉투·저울 사진 없이 청소 전·후 각 1장(`before-1.jpg`·`after-1.jpg`, "시연용 예시" 표기 그림, 실사 아님)만 있다. Storage 파일은 SQL이 아니라 대시보드나 Storage API로 지운다.
 - 상인 리포트의 "치운 쓰레기"는 들른 근무들의 채운 봉투 합계(`collected_bags`)다. 무게가 선택 입력이라 kg 합계(`collected_kg`, 저울로 잰 행만)는 앱이 쓰지 않고, v1.0 APK가 필수로 읽어 함수에만 남겨 둔다. 앱은 꽁초 칸을 두지 않아 저울을 쓴 근무도 `butts_g`는 0으로 저장한다.
 - `public.shops(id, name, lat, lng, qr_code unique, intro, menu, benefit)`: anon/authenticated 읽기. 지금은 이태원역 주변 예시 5곳(`NC-SHOP-001`~`005`), 소개·메뉴·혜택은 `[대괄호]` 자리표시. 가게 QR 값은 QR 랜딩 주소(`…/?s=NC-SHOP-001`)이고, 앱은 `s` 값(그 밖의 URL이면 마지막 경로)을 가게 코드로 쓴다.
 - `public.qr_scans(id uuid, shop_id, scanned_at, score 1~5)`: 시민의 QR 랜딩 방문과 청결도 평가. 익명은 테이블에 접근하지 못하고 `rpc/qr_visit`(가게 정보 + 스캔 기록, 모르는 코드면 null)과 `rpc/qr_rate`(스캔당 1번, 하루 안)만 쓴다.
@@ -57,11 +57,11 @@
 - 대회: 예선은 기획안 PDF(12/7 마감)로만 평가한다. 앱은 본선(12/18~19 무박 2일)에서 Working MVP로 시연한다. 심사위원이 직접 쓸 수 있게 APK 배포 링크와 시연 기기를 준비한다. 서울 열린데이터광장 데이터 1종 이상과 출처 표기는 필수다.
 - 범위: 앱 하나에 워커·상인 두 역할. 시민 QR 랜딩은 앱이 아닌 웹 1장. 시연 동선은 "배정 확인 → 근무 → 상인 리포트" 한 바퀴를 3분 안에.
 - 본선에서 빼는 것: 회원가입·권한 관리(데모 계정 2개로 대신), 결제·정산(예상 금액 표시만), 푸시, 오프라인 동기화, 서브 프로젝트(꽁초 리어카).
-- 아직 안 붙인 기능의 기술:
+- 기능별 기술(모두 구현됨, 지도만 다르게 감):
   - QR 스캔: Google Code Scanner(Play 서비스). 카메라 권한과 스캔 화면을 직접 만들지 않는다.
   - GPS 동선: FusedLocationProvider + `location` 타입 Foreground Service. 근무 중에만 수집하고 백그라운드 위치 권한은 받지 않는다. 위치 수집 동의 화면 1개.
-  - 사진: `TakePicture` ActivityResult. 갤러리 업로드는 막는다. 이미지 표시는 Coil.
-  - 지도: 네이버 지도 SDK에 250m 격자를 폴리곤으로 그린다.
+  - 사진: `TakePicture` ActivityResult. 갤러리 업로드는 막는다. 메모는 이미지 표시에 Coil을 정했지만 라이브러리 없이 `BitmapFactory`(+ EXIF 방향 반영)로 디코딩한다.
+  - 지도: 메모는 네이버 지도 SDK였지만 6×6 격자 그리드로 갔다(아래 '메모와 다르게 간 것').
 - 체크인은 스캔 시점 GPS가 가게 반경 50m 안일 때만 인정한다(QR 사진 위조 방지).
 - 근무 종료 화면은 시범 운영의 '워커 근무 기록' 폼 문항을 그대로 옮긴다. 시간대별 봉투 수(19~20/20~21/21~22/22~23시), 일반·재활용 무게(kg), 꽁초 무게(g), 저울 사진 최대 3장, 청소 전후 사진 최대 4장, 특이사항. 서울시 보상은 아직 없는 제도라 '예상 보상'으로만 표시한다.
 - 예상 수당 계산은 순수 함수(`estimateWage`, 분 단위)로 두고 테스트한다. 원가표 가정: 2인 1조, 19~23시, 워커 시급 12,000원, 플랫폼 수수료 15%, 광고 판매 단위는 '구역 × 1시간 슬롯 × 가게 1곳'.
@@ -101,6 +101,6 @@
 ## 빌드·실행
 - `./gradlew.bat assembleDebug testDebugUnitTest`
 - 기기 설치: `./gradlew.bat installDebug`
-- 배포 APK: `./gradlew.bat assembleRelease` → `app/build/outputs/apk/release/app-release.apk`. 서명은 `local.properties`의 `release.storeFile`·`release.storePassword`(별칭 `nightclean`, 키스토어는 저장소 밖 `~/.android/`, 분실하면 같은 앱으로 업데이트 불가). R8은 꺼 둠(켜면 시작 즉시 `IllegalAccessError`). GitHub Release에 `night-clean.apk` 이름으로 올리면 README 링크(`releases/latest/download/night-clean.apk`)가 최신을 가리킨다. debug와 서명이 달라 기기에서 바꿔 설치하려면 먼저 지워야 한다(로그인 풀림).
+- 배포 APK: `./gradlew.bat assembleRelease` → `app/build/outputs/apk/release/app-release.apk`. 서명은 `local.properties`의 `release.storeFile`·`release.storePassword`(별칭 `nightclean`, 키스토어는 저장소 밖 `~/.android/`, 분실하면 같은 앱으로 업데이트 불가). R8은 꺼 둠(켜면 시작 즉시 `IllegalAccessError`, 다시 켤 때 `src/main/keepRules/`에 keep 규칙을 둔다). GitHub Release에 `night-clean.apk` 이름으로 올리면 README 링크(`releases/latest/download/night-clean.apk`)가 최신을 가리킨다. debug와 서명이 달라 기기에서 바꿔 설치하려면 먼저 지워야 한다(로그인 풀림).
 - 실행: `adb shell am start -n com.example.nightclean/.MainActivity`
 - 개인 링크, Supabase 프로젝트 id, 기기 정보는 `CLAUDE.local.md`(git 제외)에 둔다.
