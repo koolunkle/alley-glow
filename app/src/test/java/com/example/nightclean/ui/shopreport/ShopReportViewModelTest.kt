@@ -20,7 +20,7 @@ class ShopReportViewModelTest {
     private val report = ShopReport(1, "가게 A", 11, nights = 2, collectedKg = 16.0, guests = 3, recent = emptyList())
 
     private class FakeReports(
-        val report: Result<ShopReport?>,
+        var report: Result<ShopReport?>,
         val add: Result<Unit> = Result.success(Unit),
         val photo: Result<ByteArray> = Result.success(byteArrayOf(1, 2, 3)),
     ) : ShopReportRepository {
@@ -38,6 +38,18 @@ class ShopReportViewModelTest {
     fun `리포트를 불러오면 Success가 된다`() {
         val vm = ShopReportViewModel(FakeReports(Result.success(report)))
         assertEquals(ShopReportUiState.Success(report), vm.uiState.value)
+    }
+
+    @Test
+    fun `새로 받기는 성공하면 바꾸고 실패하면 그대로 둔다`() {
+        val repo = FakeReports(Result.success(report))
+        val vm = ShopReportViewModel(repo)
+        repo.report = Result.failure(IllegalStateException())
+        vm.refresh()
+        assertEquals(ShopReportUiState.Success(report), vm.uiState.value)
+        repo.report = Result.success(report.copy(nights = 3))
+        vm.refresh()
+        assertEquals(3, (vm.uiState.value as ShopReportUiState.Success).report.nights)
     }
 
     @Test

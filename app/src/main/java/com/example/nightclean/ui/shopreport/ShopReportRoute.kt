@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.NightRecord
 import com.example.nightclean.domain.model.ShopReport
@@ -49,6 +50,10 @@ fun ShopReportRoute(
     onSignOut: () -> Unit,
     viewModel: ShopReportViewModel = hiltViewModel(),
 ) {
+    LifecycleResumeEffect(Unit) {
+        viewModel.refresh()
+        onPauseOrDispose {}
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ShopReportScreen(
         uiState = uiState,

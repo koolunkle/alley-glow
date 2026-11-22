@@ -32,6 +32,16 @@ class ShopReportViewModel @Inject constructor(
         }
     }
 
+    /** 화면 복귀 때 조용히 새로 받음(시연 중 워커 체크인 반영). 실패하면 지금 화면 유지 */
+    fun refresh() {
+        if (_uiState.value !is ShopReportUiState.Success) return
+        viewModelScope.launch {
+            val report = repository.getReport().getOrNull() ?: return@launch
+            val state = _uiState.value as? ShopReportUiState.Success ?: return@launch
+            if (!state.isAddingGuest) _uiState.value = state.copy(report = report)
+        }
+    }
+
     // 화면을 다시 그릴 때마다 내려받지 않게 기억(리포트 사진은 최대 10장)
     private val photoCache = mutableMapOf<String, ByteArray>()
 
