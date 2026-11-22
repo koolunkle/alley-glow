@@ -7,8 +7,9 @@
 - `public.zones(grid_id text pk, name text, score real 0~1)`: RLS로 anon/authenticated 읽기만 허용. 지금 값은 예시 점수 36칸이고, 공공데이터 분석 결과로 갈아 끼운다.
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement)`: 근무 중 광고 슬롯. 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 본인 행만 읽기(`auth.uid()`). 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게. 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
-- `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], general_kg, recycle_kg, butts_g, note, scale_photo_paths text[] 0~3)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
-- Storage `collection-photos`(비공개, JPEG 5MB): 저울 사진. 경로 `{user_id}/{shift_id}/scale-{n}.jpg`, 워커 본인 폴더만 쓰기·읽기·덮어쓰기. 근무 종료 때 긴 변 1600px JPEG로 줄여 `x-upsert`로 올리므로 재시도해도 같은 파일. 앱은 1장 이상을 요구하고, 시연용 예시 행은 비어 있다.
+- `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], weighed, general_kg·recycle_kg·butts_g(weighed=false면 모두 null, check 제약), note, photo_paths text[] 0~3)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
+- Storage `collection-photos`(비공개, JPEG 5MB): 근무 종료 사진(저울을 쓰면 저울 눈금, 아니면 채운 봉투). 경로 `{user_id}/{shift_id}/photo-{n}.jpg`, 워커 본인 폴더만 쓰기·읽기·덮어쓰기. 근무 종료 때 EXIF 방향을 반영해(`image/decodeUpright`, 썸네일도 같이 씀) 긴 변 1600px JPEG로 줄이고 `x-upsert`로 올리므로 재시도해도 같은 파일. 앱은 1장 이상을 요구하고, 시연용 예시 행은 비어 있다. Storage 파일은 SQL이 아니라 대시보드나 Storage API로 지운다.
+- 상인 리포트의 kg은 저울로 잰 행만 더한다(null은 sum에서 빠짐). 저울 없는 근무의 추정 무게는 저장하지 않는다.
 - `public.shops(id, name, lat, lng, qr_code unique)`: anon/authenticated 읽기. 지금은 이태원역 주변 예시 5곳(`NC-SHOP-001`~`005`). QR 값이 URL이면 마지막 경로를 가게 코드로 쓴다.
 - `public.checkins(shift_id → shifts, shop_id → shops, checked_at, lat, lng, distance_m 0~50, unique(shift_id, shop_id))`: 직접 쓰기 권한 없음. `rpc/check_in`(security definer)만 쓴다. 이 함수가 워커 확인 → 근무 행 보장 → QR로 가게 조회 → 하버사인 거리 50m 이하면 기록까지 한다. 모르는 QR이면 빈 결과.
 - `public.guest_visits(shop_id, created_at)`: "클린 보고 왔어요" 손님 +1. 상인 본인 가게만 쓰고 읽는다.
@@ -36,8 +37,8 @@
 | 1. 구역 추천 지도 | ZoneMap | 36칸 격자(zones), 구역 선택, 근무 시작 | 시간대 칩(시간대별 점수 필요), 범례, 구역 카드(태그·시간대), 워커 이름, 이태원역 표시 |
 | 2. 근무 중 | Shift | 근무 시간 타이머, 현재·다음 광고 슬롯(ad_slots) | GPS 기록, 체크인 수, 봉투 수, 긴급 연락 |
 | 3. 가게 체크인 | Checkin | QR 스캔(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 완료·거리 초과·모르는 QR 안내 | 이번 슬롯 체크인 목록, 근무 화면의 체크인 수 |
-| 4. 근무 종료·수거량 입력 | Collection | 시간대별 봉투 수, 종류별 무게, 저울 사진(필수 1~3장, 시스템 카메라), 특이사항, 예상 수입(시급·꽁초 보상), shifts·collections·Storage 저장 | 청소 전후 사진(전 사진은 근무 시작 때 찍어야 해 근무 화면과 함께) |
-| 5. 상인 리포트 | ShopReport | 이번 달 청소한 밤, 치운 쓰레기(들른 근무의 전체 수거량), 손님 +1 기록, 최근 청소 기록, 로그아웃 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), QR 스캔 수(QR 랜딩 웹 이후), 청소 전후 사진 |
+| 4. 근무 종료·수거량 입력 | Collection | 시간대별 봉투 수, 저울 사용 여부(기본 '저울 없음' → 봉투 수 × 6kg 추정 표시), 저울 사용 시 종류별 무게, 사진(필수 1~3장, 시스템 카메라, EXIF 방향 반영), 특이사항, 예상 수입(시급·꽁초 보상은 저울 사용 시만), shifts·collections·Storage 저장 | 청소 전후 사진(전 사진은 근무 시작 때 찍어야 해 근무 화면과 함께) |
+| 5. 상인 리포트 | ShopReport | 이번 달 청소한 밤, 치운 쓰레기(들른 근무 중 저울로 잰 양), 손님 +1 기록, 최근 청소 기록, 로그아웃 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), QR 스캔 수(QR 랜딩 웹 이후), 청소 전후 사진 |
 | 6. QR 랜딩 웹(시민) | 없음 | 없음 | 앱이 아닌 웹 페이지. 이 저장소에서 만들지 미정 |
 
 - 화면 이동: 로그인 → 지도(워커) 또는 상인 리포트(상인). 로그아웃은 스택을 비우고 로그인으로. 지도 → 근무 → 체크인(뒤로) / 근무 종료 → 지도(근무 기록은 스택에서 지움). 실제 기기에서 확인했다.
@@ -63,6 +64,7 @@
 **메모와 다르게 간 것**
 - Koin 대신 Hilt. Domain 생략 대신 `domain`(model, repository 인터페이스). DTO = 모델 대신 DTO 분리. 위 '앱 구조와 규칙'이 기준이다.
 - 지도는 네이버 지도 SDK 대신 6×6 격자 그리드. 격자 경계 데이터가 들어오면 바꾼다.
+- 근무 종료 무게: 메모는 휴대용 저울 계량과 저울 사진을 필수로 했지만, 저울이 없을 수 있고 손 입력 무게를 믿기 어려워 봉투 수와 사진을 필수로, 무게는 선택으로 바꿨다. 저울이 없으면 '봉투 수 × 봉투당 평균 무게(`KG_PER_BAG_ESTIMATE` 6kg, 가정값)'를 화면에만 보여 주고 저장하지 않는다. 평균 무게는 이태원 시범 실측(봉투 수와 kg)으로 바꾼다. 수거량 보상은 저울로 잰 무게로만 계산한다.
 - `ad_slots`는 메모 모델에 없는 임시 테이블이다. 구역·가게 id 없이 가게명만 둔다. `shops`와 구역별 슬롯이 생기면 대체한다.
 
 ## 정하지 않은 것
