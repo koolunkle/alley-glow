@@ -79,6 +79,7 @@
 - 정적 HTML 1장(`web/index.html`), 라이브러리 없음. 가게 정보는 `textContent`로만 넣는다.
 - Supabase 접속 정보는 `web/config.js`(git 제외, 예시는 `config.example.js`). 배포는 `main`에 `web/`가 바뀌면 GitHub Actions가 Secrets(`SUPABASE_URL`, `SUPABASE_KEY`)로 `config.js`를 만들어 Pages에 올린다.
 - 로컬 확인: `web/config.js`를 만든 뒤 `web/index.html?s=NC-SHOP-001`을 브라우저로 연다.
+- 인쇄용 QR: `web/print.html`(배포 주소의 `print.html`). shops 전체를 읽어 가게마다 랜딩 주소 QR(한 변 10cm, 오류 정정 Q)과 캠페인 문구 카드를 A4에 2장씩. QR 생성은 cdnjs의 qrcodejs 1.0.0.
 - 저장소는 Pages 배포를 위해 공개한다. 커밋 작성자 이메일은 GitHub noreply 주소를 쓴다(저장소 로컬 `user.email`).
 
 ## 빌드·실행
