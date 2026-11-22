@@ -40,8 +40,8 @@ fun NightCleanNavHost() {
             ShiftRoute(
                 zoneId = zoneId,
                 onCheckin = { shiftId, startedAt -> navController.navigate(AppRoute.Checkin(shiftId, zoneId, startedAt)) },
-                onFinish = { shiftId, startedAt, beforePhotos ->
-                    navController.navigate(AppRoute.Collection(shiftId, zoneId, startedAt, beforePhotos))
+                onFinish = { shiftId, startedAt, beforePhotos, bagsByHour ->
+                    navController.navigate(AppRoute.Collection(shiftId, zoneId, startedAt, beforePhotos, bagsByHour))
                 },
             )
         }

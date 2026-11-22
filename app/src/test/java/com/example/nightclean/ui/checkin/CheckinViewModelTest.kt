@@ -25,6 +25,7 @@ class CheckinViewModelTest {
         var sentCode: String? = null
         override suspend fun checkIn(shiftId: String, zoneId: String, startedAt: Long, shopCode: String, location: GeoPoint) =
             result.also { sentCode = shopCode }
+        override suspend fun countCheckins(shiftId: String) = Result.success(0)
     }
 
     private class FakeLocation(val point: GeoPoint?) : LocationRepository {

@@ -3,6 +3,7 @@ package com.example.nightclean.ui.collection
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nightclean.domain.model.BAG_SLOT_HOURS
 import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.MAX_PHOTOS
 import com.example.nightclean.domain.model.ShiftRecord
@@ -33,7 +34,14 @@ class CollectionViewModel @Inject constructor(
     val endedAt: Long = savedStateHandle.get<Long>(KEY_ENDED_AT)
         ?: System.currentTimeMillis().also { savedStateHandle[KEY_ENDED_AT] = it }
 
-    private val _uiState = MutableStateFlow<CollectionUiState>(CollectionUiState.Editing())
+    // 근무 중에 센 봉투 수가 있으면 초기값으로(여기서 고칠 수 있음)
+    private val _uiState = MutableStateFlow<CollectionUiState>(
+        CollectionUiState.Editing(
+            form = savedStateHandle.intList("bagsByHour").takeIf { it.size == BAG_SLOT_HOURS.size }
+                ?.let { CollectionForm(bags = it) }
+                ?: CollectionForm(),
+        ),
+    )
     val uiState: StateFlow<CollectionUiState> = _uiState.asStateFlow()
 
     fun changeBags(slot: Int, delta: Int) = edit { form ->
@@ -120,6 +128,13 @@ class CollectionViewModel @Inject constructor(
 private fun SavedStateHandle.stringList(key: String): List<String> = when (val value = get<Any>(key)) {
     is Array<*> -> value.filterIsInstance<String>()
     is List<*> -> value.filterIsInstance<String>()
+    else -> emptyList()
+}
+
+private fun SavedStateHandle.intList(key: String): List<Int> = when (val value = get<Any>(key)) {
+    is IntArray -> value.toList()
+    is Array<*> -> value.filterIsInstance<Int>()
+    is List<*> -> value.filterIsInstance<Int>()
     else -> emptyList()
 }
 

@@ -2,10 +2,14 @@ package com.example.nightclean.ui.shift
 
 import androidx.lifecycle.SavedStateHandle
 import com.example.nightclean.domain.model.AdSlot
+import com.example.nightclean.domain.model.CheckinResult
+import com.example.nightclean.domain.model.GeoPoint
+import com.example.nightclean.domain.model.bagSlotOf
 import com.example.nightclean.domain.model.currentAt
 import com.example.nightclean.domain.model.nextAfter
 import com.example.nightclean.domain.model.nightHour
 import com.example.nightclean.domain.repository.AdSlotRepository
+import com.example.nightclean.domain.repository.CheckinRepository
 import com.example.nightclean.domain.repository.TrackingRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,13 +43,52 @@ class ShiftViewModelTest {
         override fun stop() {}
     }
 
+    private class FakeCheckins(var count: Result<Int> = Result.success(0)) : CheckinRepository {
+        override suspend fun checkIn(shiftId: String, zoneId: String, startedAt: Long, shopCode: String, location: GeoPoint) =
+            Result.success<CheckinResult>(CheckinResult.UnknownShop(shopCode))
+        override suspend fun countCheckins(shiftId: String) = count
+    }
+
     private fun viewModel(
         result: Result<List<AdSlot>>,
         handle: SavedStateHandle = SavedStateHandle(),
         tracking: TrackingRepository = FakeTracking(),
+        checkins: CheckinRepository = FakeCheckins(),
     ) = ShiftViewModel(object : AdSlotRepository {
         override suspend fun getAdSlots() = result
-    }, tracking, handle)
+    }, checkins, tracking, handle)
+
+    @Test
+    fun `봉투는 누른 시각의 시간대 칸에 쌓이고 마지막 것을 되돌린다`() {
+        val vm = viewModel(Result.success(slots))
+        vm.addBag(19)
+        vm.addBag(21)
+        vm.addBag(21)
+        vm.addBag(23)
+        assertEquals(listOf(1, 0, 2, 1), vm.bagsByHour())
+        vm.undoBag()
+        assertEquals(listOf(1, 0, 2, 0), vm.bagsByHour())
+    }
+
+    @Test
+    fun `체크인 수는 다시 셀 때 갱신되고 실패하면 이전 값을 유지한다`() {
+        val checkins = FakeCheckins(Result.success(2))
+        val vm = viewModel(Result.success(slots), checkins = checkins)
+        vm.refreshCheckins()
+        assertEquals(2, vm.checkinCount.value)
+        checkins.count = Result.failure(IllegalStateException())
+        vm.refreshCheckins()
+        assertEquals(2, vm.checkinCount.value)
+    }
+
+    @Test
+    fun `봉투 시간대 칸은 19시 전은 첫 칸, 23시 이후와 새벽은 마지막 칸이다`() {
+        assertEquals(0, bagSlotOf(15))
+        assertEquals(0, bagSlotOf(19))
+        assertEquals(3, bagSlotOf(22))
+        assertEquals(3, bagSlotOf(23))
+        assertEquals(3, bagSlotOf(1))
+    }
 
     @Test
     fun `GPS 기록은 이 근무의 id와 구역, 시작 시각으로 시작한다`() {

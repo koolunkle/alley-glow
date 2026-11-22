@@ -28,4 +28,12 @@ class CheckinRepositoryImpl @Inject constructor(
     } catch (e: Exception) {
         Result.failure(e)
     }
+
+    override suspend fun countCheckins(shiftId: String): Result<Int> = try {
+        Result.success(remote.countCheckins(shiftId))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 }

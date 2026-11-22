@@ -12,4 +12,7 @@ interface CheckinRepository {
         shopCode: String,
         location: GeoPoint,
     ): Result<CheckinResult>
+
+    /** 이 근무에서 체크인한 가게 수. 근무 행이 아직 없으면 0 */
+    suspend fun countCheckins(shiftId: String): Result<Int>
 }

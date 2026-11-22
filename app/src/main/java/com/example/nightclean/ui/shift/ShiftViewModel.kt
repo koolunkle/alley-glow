@@ -3,8 +3,11 @@ package com.example.nightclean.ui.shift
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nightclean.domain.model.BAG_SLOT_HOURS
 import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
+import com.example.nightclean.domain.model.bagSlotOf
 import com.example.nightclean.domain.repository.AdSlotRepository
+import com.example.nightclean.domain.repository.CheckinRepository
 import com.example.nightclean.domain.repository.TrackingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ShiftViewModel @Inject constructor(
     private val repository: AdSlotRepository,
+    private val checkins: CheckinRepository,
     private val tracking: TrackingRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -49,6 +53,30 @@ class ShiftViewModel @Inject constructor(
         savedStateHandle[KEY_BEFORE_PHOTOS] = ArrayList(beforePhotos.value.filterIndexed { i, _ -> i != index })
     }
 
+    private val _checkinCount = MutableStateFlow(0)
+    val checkinCount: StateFlow<Int> = _checkinCount.asStateFlow()
+
+    /** 화면에 돌아올 때마다(체크인 후 등) 서버에서 다시 셈. 실패하면 이전 값 유지 */
+    fun refreshCheckins() {
+        viewModelScope.launch { checkins.countCheckins(shiftId).onSuccess { _checkinCount.value = it } }
+    }
+
+    /** 채운 봉투를 누른 순서대로의 시간대 칸(0~3). 되돌리기(-1)와 시간대별 집계에 씀 */
+    val bagLog: StateFlow<List<Int>> = savedStateHandle.getStateFlow(KEY_BAG_LOG, emptyList())
+
+    /** 지금 시각의 시간대 칸에 1장 */
+    fun addBag(hourOfDay: Int) {
+        savedStateHandle[KEY_BAG_LOG] = ArrayList(bagLog.value + bagSlotOf(hourOfDay))
+    }
+
+    /** 마지막으로 누른 1장을 되돌림 */
+    fun undoBag() {
+        savedStateHandle[KEY_BAG_LOG] = ArrayList(bagLog.value.dropLast(1))
+    }
+
+    /** 근무 종료 화면에 넘길 시간대별 봉투 수 */
+    fun bagsByHour(): List<Int> = BAG_SLOT_HOURS.indices.map { slot -> bagLog.value.count { it == slot } }
+
     private val _uiState = MutableStateFlow<ShiftUiState>(ShiftUiState.Loading)
     val uiState: StateFlow<ShiftUiState> = _uiState.asStateFlow()
 
@@ -70,5 +98,6 @@ class ShiftViewModel @Inject constructor(
         const val KEY_STARTED_AT = "startedAt"
         const val KEY_SHIFT_ID = "shiftId"
         const val KEY_BEFORE_PHOTOS = "beforePhotos"
+        const val KEY_BAG_LOG = "bagLog"
     }
 }
