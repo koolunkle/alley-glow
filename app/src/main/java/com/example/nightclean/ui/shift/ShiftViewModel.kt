@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.repository.AdSlotRepository
+import com.example.nightclean.domain.repository.TrackingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,8 +17,17 @@ import javax.inject.Inject
 @HiltViewModel
 class ShiftViewModel @Inject constructor(
     private val repository: AdSlotRepository,
+    private val tracking: TrackingRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+
+    val isTracking: StateFlow<Boolean> = tracking.isTracking
+
+    /** 화면에서 동의와 정확한 위치 권한을 받은 뒤 부름 */
+    fun startTracking(zoneId: String) = tracking.start(shiftId, zoneId, startedAt)
+
+    // 근무를 마치거나(근무 종료 저장 후 지도로) 근무 화면을 떠나면 이 ViewModel이 사라지므로 여기서 멈춤
+    override fun onCleared() = tracking.stop()
 
     /** 근무 시작 시각(epoch ms). 프로세스 재생성 후에도 유지 */
     val startedAt: Long = savedStateHandle.get<Long>(KEY_STARTED_AT)

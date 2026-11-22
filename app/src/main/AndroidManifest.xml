@@ -6,6 +6,10 @@
     <!-- 체크인 시 가게 50m 안인지 확인 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- 근무 중 GPS 기록(위치 타입 포그라운드 서비스, 백그라운드 위치 권한 없음) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".NightCleanApp"
@@ -30,7 +34,12 @@
             </intent-filter>
         </activity>
 
-        <!-- 저울 사진 촬영(TakePicture) 결과 파일 공유 -->
+        <service
+            android:name=".data.tracking.LocationTrackingService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <!-- 근무 종료 사진 촬영(TakePicture) 결과 파일 공유 -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

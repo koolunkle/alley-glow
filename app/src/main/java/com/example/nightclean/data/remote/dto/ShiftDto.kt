@@ -17,6 +17,24 @@ data class ShiftDto(
     @SerialName("ended_at") val endedAt: String,
 )
 
+/** 근무 행이 없을 때만 만드는 용도(종료 시각 없이). GPS 기록 시작 때 */
+@Serializable
+data class ShiftStartDto(
+    val id: String,
+    @SerialName("zone_id") val zoneId: String,
+    @SerialName("started_at") val startedAt: String,
+)
+
+/** Supabase `track_points` 테이블 행 */
+@Serializable
+data class TrackPointDto(
+    @SerialName("shift_id") val shiftId: String,
+    @SerialName("recorded_at") val recordedAt: String,
+    val lat: Double,
+    val lng: Double,
+    @SerialName("accuracy_m") val accuracyM: Float?,
+)
+
 /** Supabase `collections` 테이블 행 */
 @Serializable
 data class CollectionDto(

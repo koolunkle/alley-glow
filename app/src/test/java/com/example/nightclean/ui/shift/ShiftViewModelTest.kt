@@ -6,8 +6,10 @@ import com.example.nightclean.domain.model.currentAt
 import com.example.nightclean.domain.model.nextAfter
 import com.example.nightclean.domain.model.nightHour
 import com.example.nightclean.domain.repository.AdSlotRepository
+import com.example.nightclean.domain.repository.TrackingRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -30,10 +32,28 @@ class ShiftViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(result: Result<List<AdSlot>>, handle: SavedStateHandle = SavedStateHandle()) =
-        ShiftViewModel(object : AdSlotRepository {
-            override suspend fun getAdSlots() = result
-        }, handle)
+    private class FakeTracking : TrackingRepository {
+        var started: Triple<String, String, Long>? = null
+        override val isTracking = MutableStateFlow(false)
+        override fun start(shiftId: String, zoneId: String, startedAt: Long) { started = Triple(shiftId, zoneId, startedAt) }
+        override fun stop() {}
+    }
+
+    private fun viewModel(
+        result: Result<List<AdSlot>>,
+        handle: SavedStateHandle = SavedStateHandle(),
+        tracking: TrackingRepository = FakeTracking(),
+    ) = ShiftViewModel(object : AdSlotRepository {
+        override suspend fun getAdSlots() = result
+    }, tracking, handle)
+
+    @Test
+    fun `GPS 기록은 이 근무의 id와 구역, 시작 시각으로 시작한다`() {
+        val tracking = FakeTracking()
+        val vm = viewModel(Result.success(slots), SavedStateHandle(mapOf("startedAt" to 1234L, "shiftId" to "s1")), tracking)
+        vm.startTracking("G07")
+        assertEquals(Triple("s1", "G07", 1234L), tracking.started)
+    }
 
     @Test
     fun `불러오기에 성공하면 Success 상태가 된다`() {
