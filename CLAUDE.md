@@ -12,6 +12,7 @@
 - 상인 리포트의 kg은 저울로 잰 행만 더한다(null은 sum에서 빠짐). 저울 없는 근무의 추정 무게는 저장하지 않는다.
 - `public.shops(id, name, lat, lng, qr_code unique)`: anon/authenticated 읽기. 지금은 이태원역 주변 예시 5곳(`NC-SHOP-001`~`005`). QR 값이 URL이면 마지막 경로를 가게 코드로 쓴다.
 - `public.checkins(shift_id → shifts, shop_id → shops, checked_at, lat, lng, distance_m 0~50, unique(shift_id, shop_id))`: 직접 쓰기 권한 없음. `rpc/check_in`(security definer)만 쓴다. 이 함수가 워커 확인 → 근무 행 보장 → QR로 가게 조회 → 하버사인 거리 50m 이하면 기록까지 한다. 모르는 QR이면 빈 결과.
+- `public.track_points(shift_id → shifts, recorded_at, lat, lng, accuracy_m)`: 근무 중 GPS. 워커 본인 근무에만 쓰고 읽는다. 앱의 `data/tracking/LocationTrackingService`(위치 타입 포그라운드 서비스)가 30초마다 받아 5개씩(약 2분 30초마다) 올리고, 올리기 전에 근무 행이 없으면 종료 시각 없이 만든다(ignore-duplicates). 근무 화면의 ViewModel이 사라질 때(근무 종료 저장 또는 화면 이탈) 멈춘다.
 - `public.guest_visits(shop_id, created_at)`: "클린 보고 왔어요" 손님 +1. 상인 본인 가게만 쓰고 읽는다.
 - `rpc/shop_report`(GET, security definer): 호출한 상인 가게의 이번 달 집계 JSON(청소한 밤, 들른 근무의 수거량 kg, 손님 수, 최근 5밤과 밤마다 청소 전·후 사진 경로 1장씩). 서울 시각 기준이고 밤 날짜는 '서울 시각 − 6시간'. 상인이 아니면 null. 상인에게 워커 테이블을 열지 않으려고 함수로 둔다.
 - 시연용 예시 데이터: 11/13·14·20·21(금·토) 19~23시 근무 4건, 수거량 4건(특이사항 `[시연용 예시]`), 체크인 10건, 데모 상인 가게 손님 7건. 근무 id는 `00000000-0000-4000-8000-` 접두. 실제 시범 데이터와 섞이지 않게 본선 뒤나 실측 데이터를 넣기 전에 지운다: `delete from public.shifts where id::text like '00000000-0000-4000-8000-%';`(수거량·체크인은 cascade) 그리고 `delete from public.guest_visits where created_at < '2026-11-22';`
@@ -35,7 +36,7 @@
 |---|---|---|---|
 | (시안 없음) 로그인 | Login | 이메일 로그인, 세션 복원, 역할별 첫 화면(워커 → 지도, 상인 → 리포트), 로그아웃 | - |
 | 1. 구역 추천 지도 | ZoneMap | 36칸 격자(zones), 구역 선택, 근무 시작 | 시간대 칩(시간대별 점수 필요), 범례, 구역 카드(태그·시간대), 워커 이름, 이태원역 표시 |
-| 2. 근무 중 | Shift | 근무 시간 타이머, 현재·다음 광고 슬롯(ad_slots), 청소 전 사진(선택 0~2장, 저장 상태에 보관해 근무 종료로 넘김) | GPS 기록, 체크인 수, 봉투 수, 긴급 연락 |
+| 2. 근무 중 | Shift | 근무 시간 타이머, 위치 기록 동의 → GPS 기록(상단 '근무 중 · GPS 기록 중', 알림), 현재·다음 광고 슬롯(ad_slots), 청소 전 사진(선택 0~2장), 하단 고정 버튼 | 체크인 수, 봉투 수, 긴급 연락, 기록 경로 표시·구역 이탈 비율 |
 | 3. 가게 체크인 | Checkin | QR 스캔(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 완료·거리 초과·모르는 QR 안내 | 이번 슬롯 체크인 목록, 근무 화면의 체크인 수 |
 | 4. 근무 종료·수거량 입력 | Collection | 시간대별 봉투 수, 저울 사용 여부(기본 '저울 없음' → 봉투 수 × 6kg 추정 표시), 저울 사용 시 종류별 무게, 사진(필수 1~3장, 시스템 카메라, EXIF 방향 반영), 청소 후 사진(선택 0~2장), 특이사항, 예상 수입(시급·꽁초 보상은 저울 사용 시만), shifts·collections·Storage 저장 | 앱 프로세스가 재생성되면 입력 중인 폼(무게·봉투 수·사진) 초기화 |
 | 5. 상인 리포트 | ShopReport | 이번 달 청소한 밤, 치운 쓰레기(들른 근무 중 저울로 잰 양), 손님 +1 기록, 최근 청소 기록(밤마다 청소 전·후 썸네일), 로그아웃 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), QR 스캔 수(QR 랜딩 웹 이후), 사진 크게 보기 |
