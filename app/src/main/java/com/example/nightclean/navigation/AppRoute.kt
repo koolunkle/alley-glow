@@ -15,6 +15,8 @@ sealed interface AppRoute {
         val zoneId: String,
         val startedAt: Long,
         val beforePhotos: List<String> = emptyList(),
+        /** 근무 중에 +1로 센 시간대별 봉투 수(근무 종료 화면의 초기값) */
+        val bagsByHour: List<Int> = emptyList(),
     ) : AppRoute
     @Serializable data object ShopReport : AppRoute
 }

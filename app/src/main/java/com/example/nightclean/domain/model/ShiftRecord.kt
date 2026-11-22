@@ -3,6 +3,9 @@ package com.example.nightclean.domain.model
 /** 봉투 수를 나눠 적는 시간대의 시작 시각(19~20 … 22~23시) */
 val BAG_SLOT_HOURS = listOf(19, 20, 21, 22)
 
+/** 지금 시각의 봉투 시간대 칸. 19시 전은 첫 칸, 23시 이후(자정 넘김 포함)는 마지막 칸 */
+fun bagSlotOf(hourOfDay: Int): Int = (nightHour(hourOfDay) - BAG_SLOT_HOURS.first()).coerceIn(0, BAG_SLOT_HOURS.lastIndex)
+
 /** 근무 1회와 근무 종료 때 입력한 수거량 */
 data class ShiftRecord(
     val shiftId: String,

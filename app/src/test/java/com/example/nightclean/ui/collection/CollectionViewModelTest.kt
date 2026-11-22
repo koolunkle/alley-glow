@@ -156,6 +156,17 @@ class CollectionViewModelTest {
     }
 
     @Test
+    fun `근무 중에 센 봉투 수를 초기값으로 쓴다`() {
+        val vm = CollectionViewModel(
+            FakeShifts(),
+            SavedStateHandle(
+                mapOf("shiftId" to "s1", "zoneId" to "G01", "startedAt" to 1_000L, "endedAt" to 5_000L, "bagsByHour" to intArrayOf(1, 0, 2, 1)),
+            ),
+        )
+        assertEquals(listOf(1, 0, 2, 1), vm.editing.form.bags)
+    }
+
+    @Test
     fun `추정 무게는 봉투 수에 가정값을 곱한다`() {
         assertEquals(18.0, estimateKgFromBags(3), 0.0)
         assertEquals(0.0, estimateKgFromBags(-1), 0.0)
