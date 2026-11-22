@@ -108,6 +108,15 @@ private fun Report(uiState: ShopReportUiState.Success, onAddGuest: () -> Unit, l
         Metric("청소한 밤", "${report.nights}회", "가게 앞 체크인 기준", Modifier.weight(1f))
         Metric("치운 쓰레기", "${formatKg(report.collectedKg)}kg", "들른 근무 중 저울로 잰 양", Modifier.weight(1f))
     }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Metric("홍보물 QR 스캔", "${report.qrScans}회", "시민이 랜딩을 연 횟수", Modifier.weight(1f))
+        Metric(
+            "거리 청결도",
+            report.cleanScore?.let { "%.1f점".format(Locale.US, it) } ?: "-",
+            "QR 랜딩 평가 평균(5점 만점)",
+            Modifier.weight(1f),
+        )
+    }
 
     Row(
         Modifier
@@ -234,6 +243,7 @@ private fun ShopReportScreenPreview() {
             uiState = ShopReportUiState.Success(
                 ShopReport(
                     shopId = 1, shopName = "[가게명]", month = 11, nights = 4, collectedKg = 38.5, guests = 7,
+                    qrScans = 23, cleanScore = 4.2,
                     recent = listOf(
                         NightRecord("2026-11-29", 3, "19:12", "22:40", beforePhoto = "b", afterPhoto = "a"),
                         NightRecord("2026-11-28", 2, "20:05", "21:30"),

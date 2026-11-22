@@ -9,6 +9,10 @@ data class ShopReport(
     /** 이 가게에 체크인한 근무들의 수거량 합계(일반 + 재활용 + 꽁초) */
     val collectedKg: Double,
     val guests: Int,
+    /** 시민이 홍보물 QR로 랜딩을 연 횟수 */
+    val qrScans: Int = 0,
+    /** 랜딩의 청결도 평가 평균(1~5). 평가가 없으면 null */
+    val cleanScore: Double? = null,
     /** 최근 밤부터 최대 5개 */
     val recent: List<NightRecord>,
 )

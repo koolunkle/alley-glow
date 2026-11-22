@@ -82,5 +82,8 @@ class CheckinViewModelTest {
     fun `QR 값은 앞뒤 공백과 URL 경로를 걷어 가게 코드만 쓴다`() {
         assertEquals("NC-SHOP-001", shopCodeOf("  NC-SHOP-001 "))
         assertEquals("NC-SHOP-002", shopCodeOf("https://example.com/s/NC-SHOP-002/"))
+        // QR 랜딩 주소
+        assertEquals("NC-SHOP-003", shopCodeOf("https://user.github.io/night-clean/?s=NC-SHOP-003"))
+        assertEquals("NC-SHOP-004", shopCodeOf("https://user.github.io/night-clean/?utm=x&s=NC-SHOP-004#top"))
     }
 }
