@@ -4,7 +4,7 @@
 
 ## 백엔드
 - Supabase(PostgreSQL + PostgREST)를 쓴다.
-- `public.zones(grid_id text pk, name text, score real 0~1)`: RLS로 anon/authenticated 읽기만 허용. 지금 값은 예시 점수 36칸이고, 공공데이터 분석 결과로 갈아 끼운다.
+- `public.zones(grid_id text pk, name text, score real 0~1)`: RLS로 anon/authenticated 읽기만 허용. 이태원역 중심 6×6칸(250m)의 공공데이터 추천도(아래 '공공데이터 분석'). id `G00`~`G35`는 북→남, 서→동 순이라 `grid_id` 정렬이 곧 지도 배치다. 이름은 칸을 덮는 상권 이름(없으면 행정동) + 번호.
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement)`: 근무 중 광고 슬롯. 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 본인 행만 읽기(`auth.uid()`). 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게. 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
 - `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], weighed, general_kg·recycle_kg·butts_g(weighed=false면 모두 null, check 제약), note, photo_paths text[] 0~3, before_photo_paths·after_photo_paths text[] 각 0~2)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
@@ -61,7 +61,7 @@
 - 근무 종료 화면은 시범 운영의 '워커 근무 기록' 폼 문항을 그대로 옮긴다. 시간대별 봉투 수(19~20/20~21/21~22/22~23시), 일반·재활용 무게(kg), 꽁초 무게(g), 저울 사진 최대 3장, 청소 전후 사진 최대 4장, 특이사항. 서울시 보상은 아직 없는 제도라 '예상 보상'으로만 표시한다.
 - 보상·예상 수입 계산은 순수 함수로 두고 테스트한다. 원가표 가정: 2인 1조, 19~23시, 워커 시급 12,000원, 플랫폼 수수료 15%, 광고 판매 단위는 '구역 × 1시간 슬롯 × 가게 1곳'.
 - 목표 데이터 모델(7개): `zones`(경계, 시간대별 추천도), `shops`(이름, 위치, 홍보물 이미지, QR), `shifts`(워커, 구역, 광고 가게, 시작·종료), `track_points`, `checkins`(shift, 가게, 시각, 위치), `collections`(shift, 종류, 봉투 수, kg, 저울 사진), `qr_scans`(가게, 시각).
-- 추천도 = 야간 인구 0.5 + 휴지통 공백 0.3 + 야간 매출 0.2. 세 지표를 이태원 범위에서 0~1로 정규화하고, 가중치는 가정이다. 데이터는 OA-23016(생활인구 250m), OA-15069(가로휴지통), OA-15572(상권 추정매출). 열린데이터 인증키는 APK에 넣지 않고, 미리 받아 Supabase에 적재한다.
+- 추천도 = 야간 인구 0.5 + 휴지통 공백 0.3 + 야간 매출 0.2. 세 지표를 이태원 범위에서 0~1로 정규화하고, 가중치는 가정이다. 데이터는 OA-23016(생활인구 250m), OA-15069(가로휴지통), OA-15572(상권 추정매출). (실제로는 격자 단위인 OA-22784와 상권 영역 OA-15560을 썼다. 아래 '공공데이터 분석') 열린데이터 인증키는 APK에 넣지 않고, 미리 받아 Supabase에 적재한다.
 - 디자인: 짙은 남색 배경 + 형광 연두 포인트 1개. 본문 글꼴 Pretendard. 모서리 16dp 이상. 장갑 낀 한 손 조작을 위해 터치 영역 56dp 이상.
 
 **메모와 다르게 간 것**
@@ -74,6 +74,15 @@
 ## 정하지 않은 것
 - 사전 개발 허용 여부: 규칙은 개발을 '본선 무박 2일' 활동으로 적고, 메모는 허용될 때만 코드를 쓰기로 했다. 운영팀 답을 아직 못 받았다(11/21 기준).
 - 서비스 이름: 시안은 "클린나이트", PRD·메모·앱은 "야간 클린 워커".
+
+## 공공데이터 분석
+- 스크립트 `analysis/`(파이썬 표준 라이브러리만): `geo.py`(GRS80 횡메르카토르 변환, xlsx·shapefile 읽기, `python analysis/geo.py`로 자체 점검), `geocode_bins.py`(휴지통 주소 → 좌표, 카카오 로컬 API, 키는 `local.properties`의 `kakao.key`), `zones.py`(추천도 → `data/zones_itaewon.csv`).
+- 원본은 `data/raw/`(git 제외: 생활인구 원본 재배포 금지, 카카오 변환 결과 저장 약관 불확실). 칸별 합계인 `data/zones_itaewon.csv`만 올린다.
+- 원본: 서울 생활인구 250m 격자(OA-22784, 일별 `250_LOCAL_RESD_YYYYMMDD`, CP949, 격자 id는 국가지점번호라 경계 파일 없이 UTM-K 좌표 계산), 가로쓰레기통 설치정보(OA-15069, 202511, 주소만), 상권 추정매출(OA-15572, 2025년), 상권 영역(OA-15560, shapefile, EPSG:5181).
+- 지표: 야간 인구 = 금·토(11/13·14) 19~23시 평균, 휴지통 공백 = 칸 중심에서 가장 가까운 휴지통까지 거리, 야간 매출 = 21~24시 매출(분기 평균)을 상권 영역과 겹친 면적 비율로 나눔. 36칸 안에서 최소-최대 정규화.
+- 용산구 휴지통 359개 중 354개 변환(실패 5개는 한강로·청파동, 분석 범위 밖), 범위 안 95개. 이웃 구 휴지통은 넣지 않았다(36칸 모두 용산구).
+- 휴지통 공백이 가산이라 인구가 거의 없는 칸(용산공원 G30 등)도 점수를 받는다. 가중치와 함께 기획안에서 가정으로 밝힌다.
+- 출처 표기: "서울특별시 열린데이터광장(서울 생활인구, 가로쓰레기통 설치정보, 상권분석서비스), 서울특별시·KT".
 
 ## QR 랜딩 웹
 - 정적 HTML 1장(`web/index.html`), 라이브러리 없음. 가게 정보는 `textContent`로만 넣는다.
