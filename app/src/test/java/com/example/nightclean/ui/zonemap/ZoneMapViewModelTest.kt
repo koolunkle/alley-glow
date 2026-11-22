@@ -41,4 +41,13 @@ class ZoneMapViewModelTest {
         vm.selectZone("G02")
         assertEquals(zones[1], (vm.uiState.value as ZoneMapUiState.Success).selectedZone)
     }
+
+    @Test
+    fun `매출은 억·만 원 단위로 줄여 보인다`() {
+        assertEquals("45억 원", formatWon(4_493_365_069))
+        assertEquals("4.2억 원", formatWon(418_462_829))
+        assertEquals("1.0억 원", formatWon(100_000_000))
+        assertEquals("9,999만 원", formatWon(99_990_000))
+        assertEquals("0만 원", formatWon(0))
+    }
 }
