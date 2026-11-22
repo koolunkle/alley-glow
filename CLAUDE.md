@@ -1,4 +1,4 @@
-# 야간 클린 워커 (NightClean)
+# Night Clean (나이트 클린)
 
 2026 서울 야간경제 활성화 해커톤(AIFactory 9320) 출품작. 상권 골목 야간 청소 인력이 가게 광고를 달고 다니며 손님을 안내한다. 비용은 가게 광고비와 서울시 수거량 보상으로 나눈다. 시범 운영은 이태원 5개 가게.
 
@@ -28,6 +28,9 @@
 - 화면: `XxxRoute`(상태 보유, `hiltViewModel()`) + `XxxScreen`(상태 없음, Preview). 상태는 `StateFlow<XxxUiState>`(sealed interface).
 - `HttpClient`는 `di/NetworkModule`의 싱글턴 하나를 쓴다(baseUrl `/rest/v1/`, apikey 헤더, `expectSuccess`). 로그인 중이면 사용자 토큰을 Bearer로 붙인다. 인증(세션 저장·갱신)만 `SupabaseClient`가 맡는다.
 - 테마는 다크 하나(`NightCleanTheme`, 다이내믹 컬러 없음). 상태바와 내비바는 `SystemBarStyle.dark`로 둔다.
+- 디자인 토큰: 글꼴 Pretendard(`res/font`, Regular·Bold·Black만, OFL 사본 `res/raw/pretendard_license.txt`), 글자 크기는 `ui/theme/Type.kt`의 단계 이름(`headlineSmall` 화면 제목, `titleLarge` 카드 제목·큰 숫자, `displayMedium` 타이머 등)으로만, 간격은 `Spacing`(4·8·12·16·24), 모서리는 `MaterialTheme.shapes`(12·20·24), 주 버튼 높이 `TouchHeight` 56dp.
+- 역할 첫 화면(지도, 상인 리포트)은 `ui/common/AppTopBar`(서비스 이름 + 계정 칩 → 로그아웃 메뉴)를 쓴다.
+- 화면 문구는 `res/values/strings.xml`(`stringResource`)에 둔다. 제목·버튼은 짧은 명사형, 안내는 한 문장. 지금은 공통·로그인만 옮겼고 나머지 화면은 화면별 정리 때 옮긴다.
 - 사용자에게 보이는 오류 문구는 한글 고정 문구를 쓴다. 예외 원문은 보여주지 않는다.
 - 과한 설계를 피한다. 임시 처리에는 `// shortcut: <한계>, <바꿀 시점>` 주석을 단다.
 
@@ -66,6 +69,7 @@
 - 디자인: 짙은 남색 배경 + 형광 연두 포인트 1개. 본문 글꼴 Pretendard. 모서리 16dp 이상. 장갑 낀 한 손 조작을 위해 터치 영역 56dp 이상.
 
 **메모와 다르게 간 것**
+- 서비스 이름: PRD·메모의 "야간 클린 워커", 시안의 가칭 "클린나이트" 대신 **Night Clean**(11/22 결정). 워커·상인·시민 세 역할을 다 덮는 이름. 문서에서 처음 쓸 때는 "Night Clean(나이트 클린)".
 - Koin 대신 Hilt. Domain 생략 대신 `domain`(model, repository 인터페이스). DTO = 모델 대신 DTO 분리. 위 '앱 구조와 규칙'이 기준이다.
 - 지도는 네이버 지도 SDK 대신 6×6 격자 그리드. 격자 경계 데이터가 들어오면 바꾼다.
 - 청소 전후 사진: 메모의 근무 기록 폼은 필수였지만, 시작 때 잊으면 근무를 마칠 수 없어 선택(각 최대 2장)으로 두고 '같은 자리, 같은 각도'를 안내한다.
@@ -74,7 +78,6 @@
 
 ## 정하지 않은 것
 - 사전 개발 허용 여부: 규칙은 개발을 '본선 무박 2일' 활동으로 적고, 메모는 허용될 때만 코드를 쓰기로 했다. 운영팀 답을 아직 못 받았다(11/21 기준).
-- 서비스 이름: 시안은 "클린나이트", PRD·메모·앱은 "야간 클린 워커".
 
 ## 공공데이터 분석
 - 스크립트 `analysis/`(파이썬 표준 라이브러리만): `geo.py`(GRS80 횡메르카토르 변환, xlsx·shapefile 읽기, `python analysis/geo.py`로 자체 점검), `geocode_bins.py`(휴지통 주소 → 좌표, 카카오 로컬 API, 키는 `local.properties`의 `kakao.key`), `zones.py`(추천도 → `data/zones_itaewon.csv`, 시간대별 36칸 인구 합계 → `data/pop_hourly_itaewon.csv`), `figures.py`(기획안용 그림 3장 → `docs/figures/`, Pillow + 맑은 고딕, 밝은 배경, 출처 문구 포함).
