@@ -4,6 +4,8 @@ import com.example.nightclean.data.repository.AdSlotRepositoryImpl
 import com.example.nightclean.data.repository.AuthRepositoryImpl
 import com.example.nightclean.data.repository.CheckinRepositoryImpl
 import com.example.nightclean.data.repository.LocationRepositoryImpl
+import com.example.nightclean.data.repository.ShopReportRepositoryImpl
+import com.example.nightclean.domain.repository.ShopReportRepository
 import com.example.nightclean.domain.repository.CheckinRepository
 import com.example.nightclean.domain.repository.LocationRepository
 import com.example.nightclean.data.repository.ShiftRepositoryImpl
@@ -45,4 +47,8 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindLocationRepository(impl: LocationRepositoryImpl): LocationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindShopReportRepository(impl: ShopReportRepositoryImpl): ShopReportRepository
 }
