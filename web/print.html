@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>가게 QR 인쇄</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root { --navy: #0F1B2D; --lime: #C6F432; --ink: #111; --muted: #555; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #e9ecef; color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  }
+  .toolbar {
+    position: sticky; top: 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    padding: 12px 16px; background: var(--navy); color: #fff;
+  }
+  .toolbar button {
+    min-height: 44px; padding: 0 20px; border: 0; border-radius: 22px; background: var(--lime);
+    color: var(--navy); font: inherit; font-weight: 800; cursor: pointer;
+  }
+  .toolbar p { margin: 0; font-size: 14px; }
+  #status { padding: 16px; }
+  .sheet { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px; }
+  /* 카드 1장 = A4 절반(세로 약 13.5cm). QR은 한 변 10cm(메모: 뒤따라 걷는 사람이 찍을 수 있게) */
+  .card {
+    width: 186mm; height: 133mm; background: #fff; border: 1px solid #ccc;
+    display: flex; flex-direction: column; break-inside: avoid; page-break-inside: avoid;
+  }
+  .card header {
+    background: var(--navy); color: var(--lime); text-align: center;
+    font-size: 7mm; font-weight: 900; padding: 3mm 0;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .card .body { flex: 1; display: flex; align-items: center; gap: 8mm; padding: 6mm 8mm; }
+  .card .qr { width: 100mm; height: 100mm; flex: none; }
+  .card .qr img, .card .qr canvas { width: 100mm !important; height: 100mm !important; display: block; }
+  .card .info { display: flex; flex-direction: column; gap: 4mm; min-width: 0; }
+  .card .name { font-size: 11mm; font-weight: 900; line-height: 1.15; word-break: keep-all; }
+  .card .menu { font-size: 5mm; color: var(--muted); }
+  .card .cta { font-size: 5mm; font-weight: 700; }
+  .card .code { font-size: 3.2mm; color: var(--muted); word-break: break-all; }
+  @page { size: A4 portrait; margin: 10mm 12mm; }
+  @media print {
+    body { background: #fff; }
+    .toolbar, #status { display: none; }
+    .sheet { padding: 0; gap: 4mm; }
+    .card { border-color: #999; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button type="button" onclick="window.print()">인쇄</button>
+  <p>A4 세로, 배율 100%(실제 크기)로 인쇄하세요. QR 한 변이 10cm가 됩니다.</p>
+</div>
+<p id="status" role="status" aria-live="polite">가게 목록을 불러오고 있어요…</p>
+<div class="sheet" id="sheet"></div>
+
+<!-- SUPABASE_URL, SUPABASE_KEY(publishable). index.html과 같은 config.js -->
+<script src="config.js"></script>
+<script>
+  // 배포된 주소에서 열면 그 위치 기준, 파일로 열면 배포 주소 기준으로 랜딩 주소를 만듦
+  const LANDING_BASE = location.protocol === 'https:'
+    ? new URL('./', location.href).href
+    : 'https://koolunkle.github.io/night-clean/';
+  const status = document.getElementById('status');
+
+  function card(shop) {
+    const url = `${LANDING_BASE}?s=${encodeURIComponent(shop.qr_code)}`;
+    const el = document.createElement('article');
+    el.className = 'card';
+    el.innerHTML = `
+      <header>이 골목은 지금 청소 중</header>
+      <div class="body">
+        <div class="qr"></div>
+        <div class="info">
+          <div class="name"></div>
+          <div class="menu"></div>
+          <div class="cta">찍으면 가게 안내와 오늘의 혜택</div>
+          <div class="code"></div>
+        </div>
+      </div>`;
+    // 가게 정보는 textContent로만(HTML이 섞여도 실행되지 않게)
+    el.querySelector('.name').textContent = shop.name;
+    el.querySelector('.menu').textContent = shop.menu || '';
+    el.querySelector('.code').textContent = url;
+    // 크게 그린 뒤 CSS로 10cm에 맞춰 인쇄 해상도 확보. 오류 정정 Q(일부 가려져도 읽힘)
+    new QRCode(el.querySelector('.qr'), { text: url, width: 1000, height: 1000, correctLevel: QRCode.CorrectLevel.Q });
+    return el;
+  }
+
+  async function load() {
+    if (typeof SUPABASE_URL === 'undefined' || typeof QRCode === 'undefined') {
+      status.textContent = '설정(config.js)이나 QR 라이브러리를 불러오지 못했어요.';
+      return;
+    }
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/shops?select=name,menu,qr_code&order=id`, {
+        headers: { apikey: SUPABASE_KEY },
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const shops = await res.json();
+      const sheet = document.getElementById('sheet');
+      shops.forEach((shop) => sheet.append(card(shop)));
+      status.textContent = `가게 ${shops.length}곳`;
+    } catch (e) {
+      status.textContent = '가게 목록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.';
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
