@@ -6,10 +6,12 @@
 - Supabase(PostgreSQL + PostgREST)를 쓴다.
 - `public.zones(grid_id text pk, name text, score real 0~1)`: RLS로 anon/authenticated 읽기만 허용. 지금 값은 예시 점수 36칸이고, 공공데이터 분석 결과로 갈아 끼운다.
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement)`: 근무 중 광고 슬롯. 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
-- `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name)`: 본인 행만 읽기(`auth.uid()`). 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
+- `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게.: 본인 행만 읽기(`auth.uid()`). 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
 - `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], general_kg, recycle_kg, butts_g, note)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
 - `public.shops(id, name, lat, lng, qr_code unique)`: anon/authenticated 읽기. 지금은 이태원역 주변 예시 5곳(`NC-SHOP-001`~`005`). QR 값이 URL이면 마지막 경로를 가게 코드로 쓴다.
 - `public.checkins(shift_id → shifts, shop_id → shops, checked_at, lat, lng, distance_m 0~50, unique(shift_id, shop_id))`: 직접 쓰기 권한 없음. `rpc/check_in`(security definer)만 쓴다. 이 함수가 워커 확인 → 근무 행 보장 → QR로 가게 조회 → 하버사인 거리 50m 이하면 기록까지 한다. 모르는 QR이면 빈 결과.
+- `public.guest_visits(shop_id, created_at)`: "클린 보고 왔어요" 손님 +1. 상인 본인 가게만 쓰고 읽는다.
+- `rpc/shop_report`(GET, security definer): 호출한 상인 가게의 이번 달 집계 JSON(청소한 밤, 들른 근무의 수거량 kg, 손님 수, 최근 5밤). 서울 시각 기준이고 밤 날짜는 '서울 시각 − 6시간'. 상인이 아니면 null. 상인에게 워커 테이블을 열지 않으려고 함수로 둔다.
 - 쓰기가 필요한 테이블은 `authenticated` + `auth.uid()` 기준 RLS로 연다. anon 쓰기는 열지 않는다(시민 QR 웹 제외).
 - 접속 정보는 `local.properties`의 `supabase.url`, `supabase.key`(publishable key)에서 BuildConfig로 들어간다. git에 올리지 않는다.
 
@@ -33,10 +35,9 @@
 | 2. 근무 중 | Shift | 근무 시간 타이머, 현재·다음 광고 슬롯(ad_slots) | GPS 기록, 체크인 수, 봉투 수, 긴급 연락 |
 | 3. 가게 체크인 | Checkin | QR 스캔(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 완료·거리 초과·모르는 QR 안내 | 이번 슬롯 체크인 목록, 근무 화면의 체크인 수 |
 | 4. 근무 종료·수거량 입력 | Collection | 시간대별 봉투 수, 종류별 무게, 특이사항, 예상 수입(시급·꽁초 보상), shifts·collections 저장 | 저울·전후 사진(Storage) |
-| 5. 상인 리포트 | ShopReport | 없음(임시 화면) | 월간 지표, "+1 기록", 최근 청소 기록 |
+| 5. 상인 리포트 | ShopReport | 이번 달 청소한 밤, 치운 쓰레기(들른 근무의 전체 수거량), 손님 +1 기록, 최근 청소 기록, 로그아웃 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), QR 스캔 수(QR 랜딩 웹 이후), 청소 전후 사진 |
 | 6. QR 랜딩 웹(시민) | 없음 | 없음 | 앱이 아닌 웹 페이지. 이 저장소에서 만들지 미정 |
 
-- 임시 화면은 `PlaceholderScreen`을 쓰고, 각 파일의 TODO에 붙일 ViewModel 이름이 적혀 있다.
 - 화면 이동: 로그인 → 지도(워커) 또는 상인 리포트(상인). 로그아웃은 스택을 비우고 로그인으로. 지도 → 근무 → 체크인(뒤로) / 근무 종료 → 지도(근무 기록은 스택에서 지움). 실제 기기에서 확인했다.
 
 ## 기획 문서에서 정한 것
