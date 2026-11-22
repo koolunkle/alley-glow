@@ -38,7 +38,7 @@ class LoginViewModel @Inject constructor(
 
     fun signIn(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
-            _uiState.value = LoginUiState.Input(error = "이메일과 비밀번호를 입력해 주세요.")
+            _uiState.value = LoginUiState.Input(error = LoginError.EMPTY)
             return
         }
         _uiState.value = LoginUiState.Input(isSubmitting = true)
@@ -46,13 +46,7 @@ class LoginViewModel @Inject constructor(
             _uiState.value = repository.signIn(email.trim(), password).fold(
                 onSuccess = { LoginUiState.SignedIn(it) },
                 onFailure = { e ->
-                    LoginUiState.Input(
-                        error = if (e is UnregisteredAccountException) {
-                            "등록되지 않은 계정이에요. 운영자에게 문의해 주세요."
-                        } else {
-                            "로그인하지 못했어요. 이메일, 비밀번호, 네트워크를 확인해 주세요."
-                        },
-                    )
+                    LoginUiState.Input(error = if (e is UnregisteredAccountException) LoginError.UNREGISTERED else LoginError.FAILED)
                 },
             )
         }

@@ -3,6 +3,7 @@ package com.example.nightclean.ui.checkin
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nightclean.domain.model.CheckinResult
 import com.example.nightclean.domain.model.shopCodeOf
 import com.example.nightclean.domain.repository.CheckinRepository
 import com.example.nightclean.domain.repository.LocationRepository
@@ -39,7 +40,10 @@ class CheckinViewModel @Inject constructor(
                 return@launch
             }
             _uiState.value = checkins.checkIn(shiftId, zoneId, startedAt, shopCodeOf(qr), here).fold(
-                onSuccess = { CheckinUiState.Done(it, System.currentTimeMillis()) },
+                onSuccess = { result ->
+                    val count = if (result is CheckinResult.CheckedIn) checkins.countCheckins(shiftId).getOrNull() else null
+                    CheckinUiState.Done(result, System.currentTimeMillis(), count)
+                },
                 onFailure = { CheckinUiState.Error(CheckinError.NETWORK) },
             )
         }

@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.example.nightclean.R
 import com.example.nightclean.data.remote.ShiftRemoteDataSource
 import com.example.nightclean.data.remote.dto.ShiftStartDto
 import com.example.nightclean.data.remote.dto.TrackPointDto
@@ -127,12 +128,12 @@ class LocationTrackingService : Service() {
     private fun notification() = run {
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, "근무 중 위치 기록", NotificationManager.IMPORTANCE_LOW))
+            manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.tracking_channel), NotificationManager.IMPORTANCE_LOW))
         }
         NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle("근무 중 · GPS 기록 중")
-            .setContentText("근무를 마치면 기록을 멈춰요")
+            .setContentTitle(getString(R.string.shift_status_tracking))
+            .setContentText(getString(R.string.tracking_notification_text))
             .setOngoing(true)
             .build()
     }

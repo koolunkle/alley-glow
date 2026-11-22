@@ -15,6 +15,15 @@
     <string name="login_email">이메일</string>
     <string name="login_password">비밀번호</string>
     <string name="login_submit">로그인</string>
+    <string name="login_error_empty">이메일과 비밀번호를 입력해 주세요.</string>
+    <string name="login_error_unregistered">등록되지 않은 계정이에요. 운영자에게 문의해 주세요.</string>
+    <string name="login_error_failed">로그인하지 못했어요. 이메일, 비밀번호, 네트워크를 확인해 주세요.</string>
+
+    <!-- 사진 칸·위치 기록 알림 -->
+    <string name="photo_add_desc">%1$s %2$d 촬영</string>
+    <string name="photo_remove_desc">%1$s 삭제</string>
+    <string name="tracking_channel">근무 중 위치 기록</string>
+    <string name="tracking_notification_text">근무를 마치면 기록을 멈춰요</string>
     <!-- 구역 지도 -->
     <string name="zonemap_title">오늘 밤, 어느 골목으로 갈까요?</string>
     <string name="zonemap_load_error">구역 정보를 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.</string>
@@ -76,6 +85,7 @@
     <string name="checkin_working">위치 확인 중</string>
     <string name="checkin_done_title">체크인 완료</string>
     <string name="checkin_done_caption">가게에서 %1$s · %2$s</string>
+    <string name="checkin_done_count">이번 근무 %1$d번째 체크인</string>
     <string name="checkin_too_far_title">%1$s 떨어져 있어요</string>
     <string name="checkin_too_far_caption">가게 앞 50m 안에서 다시 스캔해 주세요</string>
     <string name="checkin_unknown_title">등록되지 않은 QR</string>
@@ -119,4 +129,32 @@
     <string name="collection_error_weight">무게는 숫자로 적어 주세요.</string>
     <string name="collection_error_photo">채운 봉투 사진을 1장 이상 찍어 주세요.</string>
     <string name="collection_error_save">저장하지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요. 입력과 사진은 그대로 남아 있어요.</string>
+
+    <!-- 상인 리포트 -->
+    <string name="report_no_shop">이 계정에 연결된 가게가 없어요. 운영자에게 문의해 주세요.</string>
+    <string name="report_load_error">리포트를 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.</string>
+    <string name="report_owner">%1$s 사장님</string>
+    <string name="report_title">%1$d월 우리 골목 리포트</string>
+    <string name="report_nights">청소한 밤</string>
+    <string name="report_nights_value">%1$d회</string>
+    <string name="report_nights_caption">가게 앞 체크인 기준</string>
+    <string name="report_bags">치운 쓰레기</string>
+    <string name="report_bags_value">%1$d봉투</string>
+    <string name="report_bags_caption">100L 봉투 기준</string>
+    <string name="report_scans">홍보물 QR 스캔</string>
+    <string name="report_scans_caption">시민이 안내를 연 횟수</string>
+    <string name="report_clean">거리 청결도</string>
+    <string name="report_clean_value">%1$s점</string>
+    <string name="report_clean_caption">시민 평가 평균 · 5점 만점</string>
+    <string name="report_guests">광고 보고 온 손님</string>
+    <string name="report_guests_value">%1$d명</string>
+    <string name="report_guests_caption">“클린 워커 보고 왔어요”라고 하면 눌러 주세요</string>
+    <string name="report_guests_add">+1</string>
+    <string name="report_guests_failed">손님을 기록하지 못했어요. 다시 눌러 주세요.</string>
+    <string name="report_recent">최근 청소 기록</string>
+    <string name="report_recent_empty">아직 청소 기록이 없어요</string>
+    <string name="report_night_detail">%1$s · 가게 앞 체크인 %2$d회</string>
+    <string name="report_photo_before">전</string>
+    <string name="report_photo_after">후</string>
+    <string name="report_photo_desc">청소 %1$s 사진</string>
 </resources>

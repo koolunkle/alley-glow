@@ -27,7 +27,7 @@ class ShopReportViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = repository.getReport().fold(
                 onSuccess = { report -> report?.let { ShopReportUiState.Success(it) } ?: ShopReportUiState.NoShop },
-                onFailure = { ShopReportUiState.Error("리포트를 불러오지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.") },
+                onFailure = { ShopReportUiState.Error },
             )
         }
     }
@@ -53,11 +53,11 @@ class ShopReportViewModel @Inject constructor(
     fun addGuest() {
         val state = _uiState.value as? ShopReportUiState.Success ?: return
         if (state.isAddingGuest) return
-        _uiState.value = state.copy(isAddingGuest = true, message = null)
+        _uiState.value = state.copy(isAddingGuest = true, guestFailed = false)
         viewModelScope.launch {
             _uiState.value = repository.addGuest(state.report.shopId).fold(
                 onSuccess = { state.copy(report = state.report.copy(guests = state.report.guests + 1)) },
-                onFailure = { state.copy(message = "손님을 기록하지 못했어요. 다시 눌러 주세요.") },
+                onFailure = { state.copy(guestFailed = true) },
             )
         }
     }

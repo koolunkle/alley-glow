@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -70,6 +71,7 @@ fun PhotoRow(
         return
     }
     val context = LocalContext.current
+    val addLabel = stringResource(R.string.photo_add_desc, label, photos.size + 1)
     // 촬영 중 화면이 재생성돼도 저장할 파일 경로를 잃지 않게
     var pending by rememberSaveable { mutableStateOf<String?>(null) }
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
@@ -94,7 +96,7 @@ fun PhotoRow(
                 color = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                modifier = Modifier.size(88.dp).semantics { contentDescription = "$label ${photos.size + 1} 촬영" },
+                modifier = Modifier.size(88.dp).semantics { contentDescription = addLabel },
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     Icon(painterResource(R.drawable.ic_photo_camera), contentDescription = null, modifier = Modifier.size(28.dp))
@@ -119,7 +121,7 @@ private fun PhotoThumb(path: String, label: String, enabled: Boolean, onRemove: 
                 Modifier
                     .align(Alignment.TopEnd)
                     .size(40.dp)
-                    .clickable(role = Role.Button, onClickLabel = "$label 삭제", onClick = onRemove),
+                    .clickable(role = Role.Button, onClickLabel = stringResource(R.string.photo_remove_desc, label), onClick = onRemove),
                 Alignment.Center,
             ) {
                 Box(Modifier.size(24.dp).background(Color.Black.copy(alpha = 0.6f), CircleShape), Alignment.Center) {

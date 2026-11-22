@@ -99,7 +99,14 @@ fun LoginScreen(
                 keyboardActions = KeyboardActions(onDone = { onSubmit() }),
                 modifier = Modifier.fillMaxWidth(),
             )
-            uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            uiState.error?.let {
+                val message = when (it) {
+                    LoginError.EMPTY -> R.string.login_error_empty
+                    LoginError.UNREGISTERED -> R.string.login_error_unregistered
+                    LoginError.FAILED -> R.string.login_error_failed
+                }
+                Text(stringResource(message), color = MaterialTheme.colorScheme.error)
+            }
             Button(
                 onClick = onSubmit,
                 enabled = !uiState.isSubmitting,
@@ -128,7 +135,7 @@ fun LoginScreen(
 private fun LoginScreenPreview() {
     NightCleanTheme {
         LoginScreen(
-            uiState = LoginUiState.Input(error = "로그인하지 못했어요. 이메일, 비밀번호, 네트워크를 확인해 주세요."),
+            uiState = LoginUiState.Input(error = LoginError.FAILED),
             email = "worker@example.com",
             password = "secret",
             onEmailChange = {}, onPasswordChange = {}, onSubmit = {},

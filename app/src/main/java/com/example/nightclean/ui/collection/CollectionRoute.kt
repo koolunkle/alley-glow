@@ -45,13 +45,13 @@ import com.example.nightclean.domain.model.HOURLY_WAGE_WON
 import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.MAX_PHOTOS
 import com.example.nightclean.domain.model.estimateWage
+import com.example.nightclean.ui.common.InlineNotice
 import com.example.nightclean.ui.common.PhotoRow
 import com.example.nightclean.ui.common.SectionCard
 import com.example.nightclean.ui.common.SubTopBar
 import com.example.nightclean.ui.theme.NightCleanTheme
 import com.example.nightclean.ui.theme.Spacing
 import com.example.nightclean.ui.theme.TouchHeight
-import com.example.nightclean.ui.theme.Warning
 
 @Composable
 fun CollectionRoute(
@@ -113,7 +113,7 @@ fun CollectionScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
                 uiState.error?.let {
-                    Text(
+                    InlineNotice(
                         stringResource(
                             when (it) {
                                 CollectionError.WEIGHT -> R.string.collection_error_weight
@@ -121,8 +121,6 @@ fun CollectionScreen(
                                 CollectionError.SAVE -> R.string.collection_error_save
                             },
                         ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Warning,
                     )
                 }
                 Button(onClick = onSubmit, enabled = enabled, modifier = Modifier.fillMaxWidth().height(TouchHeight)) {

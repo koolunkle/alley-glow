@@ -66,6 +66,7 @@ import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.currentAt
 import com.example.nightclean.domain.model.nextAfter
 import com.example.nightclean.domain.model.nightHour
+import com.example.nightclean.ui.common.InlineNotice
 import com.example.nightclean.ui.common.PhotoRow
 import com.example.nightclean.ui.common.SectionCard
 import com.example.nightclean.ui.theme.NightCleanTheme
@@ -363,7 +364,7 @@ private fun TrackingConsent(permissionDenied: Boolean, onStart: () -> Unit) {
             }
         }
         if (permissionDenied) {
-            Text(stringResource(R.string.shift_consent_denied), style = MaterialTheme.typography.bodySmall, color = Warning)
+            InlineNotice(stringResource(R.string.shift_consent_denied), MaterialTheme.colorScheme.background)
         }
     }
 }

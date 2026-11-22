@@ -11,13 +11,14 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShopReportViewModelTest {
 
-    private val report = ShopReport(1, "가게 A", 11, nights = 2, collectedKg = 16.0, guests = 3, recent = emptyList())
+    private val report = ShopReport(1, "가게 A", 11, nights = 2, collectedBags = 9, guests = 3, recent = emptyList())
 
     private class FakeReports(
         var report: Result<ShopReport?>,
@@ -72,7 +73,7 @@ class ShopReportViewModelTest {
         vm.addGuest()
         val state = vm.uiState.value as ShopReportUiState.Success
         assertEquals(3, state.report.guests)
-        assertEquals("손님을 기록하지 못했어요. 다시 눌러 주세요.", state.message)
+        assertTrue(state.guestFailed)
     }
 
     @Test
@@ -91,10 +92,8 @@ class ShopReportViewModelTest {
     }
 
     @Test
-    fun `날짜와 무게를 읽기 쉽게 표시한다`() {
+    fun `날짜를 읽기 쉽게 표시한다`() {
         assertEquals("11/29 (일)", formatNight("2026-11-29"))
         assertEquals("bad", formatNight("bad"))
-        assertEquals("16", formatKg(16.0))
-        assertEquals("12.5", formatKg(12.5))
     }
 }

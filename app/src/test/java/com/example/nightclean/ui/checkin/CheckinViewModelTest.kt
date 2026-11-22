@@ -25,7 +25,7 @@ class CheckinViewModelTest {
         var sentCode: String? = null
         override suspend fun checkIn(shiftId: String, zoneId: String, startedAt: Long, shopCode: String, location: GeoPoint) =
             result.also { sentCode = shopCode }
-        override suspend fun countCheckins(shiftId: String) = Result.success(0)
+        override suspend fun countCheckins(shiftId: String) = Result.success(3)
     }
 
     private class FakeLocation(val point: GeoPoint?) : LocationRepository {
@@ -49,7 +49,16 @@ class CheckinViewModelTest {
         val vm = viewModel(repo)
         vm.checkIn("https://example.com/s/NC-SHOP-001")
         assertEquals("NC-SHOP-001", repo.sentCode)
-        assertEquals(CheckinResult.CheckedIn("가게 A", 14), (vm.uiState.value as CheckinUiState.Done).result)
+        val done = vm.uiState.value as CheckinUiState.Done
+        assertEquals(CheckinResult.CheckedIn("가게 A", 14), done.result)
+        assertEquals(3, done.count)
+    }
+
+    @Test
+    fun `거리 초과면 체크인 수를 묻지 않는다`() {
+        val vm = viewModel(FakeCheckins(Result.success(CheckinResult.TooFar("가게 A", 120))))
+        vm.checkIn("NC-SHOP-001")
+        assertNull((vm.uiState.value as CheckinUiState.Done).count)
     }
 
     @Test

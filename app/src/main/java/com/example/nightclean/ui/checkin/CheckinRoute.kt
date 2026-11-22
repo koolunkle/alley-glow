@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -118,7 +119,7 @@ fun CheckinScreen(uiState: CheckinUiState, onScan: () -> Unit, onDone: () -> Uni
                         Text(stringResource(R.string.checkin_back_to_shift), style = MaterialTheme.typography.labelLarge)
                     }
                     TextButton(onClick = onScan, modifier = Modifier.fillMaxWidth().height(48.dp)) {
-                        Text(stringResource(R.string.checkin_scan_another), style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(R.string.checkin_scan_another), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     Button(
@@ -132,13 +133,14 @@ fun CheckinScreen(uiState: CheckinUiState, onScan: () -> Unit, onDone: () -> Uni
                         )
                     }
                     TextButton(onClick = onDone, modifier = Modifier.fillMaxWidth().height(48.dp)) {
-                        Text(stringResource(R.string.checkin_back_to_shift), style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(R.string.checkin_back_to_shift), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).padding(horizontal = Spacing.l), Alignment.Center) {
+        // 정중앙보다 조금 위(아래 버튼과 거리를 둠)
+        Box(Modifier.fillMaxSize().padding(padding).padding(horizontal = Spacing.l), BiasAlignment(0f, -0.3f)) {
             when (uiState) {
                 CheckinUiState.Idle -> StatusHero(
                     icon = R.drawable.ic_qr_scan,
@@ -154,7 +156,7 @@ fun CheckinScreen(uiState: CheckinUiState, onScan: () -> Unit, onDone: () -> Uni
                     CircularProgressIndicator(Modifier.size(48.dp))
                     Text(stringResource(R.string.checkin_working), style = MaterialTheme.typography.titleMedium)
                 }
-                is CheckinUiState.Done -> ResultHero(uiState.result, uiState.checkedAt)
+                is CheckinUiState.Done -> ResultHero(uiState.result, uiState.checkedAt, uiState.count)
                 is CheckinUiState.Error -> StatusHero(
                     icon = R.drawable.ic_warning,
                     container = Warning.copy(alpha = 0.16f),
@@ -175,19 +177,20 @@ fun CheckinScreen(uiState: CheckinUiState, onScan: () -> Unit, onDone: () -> Uni
 }
 
 @Composable
-private fun ResultHero(result: CheckinResult, checkedAt: Long) {
+private fun ResultHero(result: CheckinResult, checkedAt: Long, count: Int?) {
     when (result) {
         is CheckinResult.CheckedIn -> StatusHero(
             icon = R.drawable.ic_check,
             container = MaterialTheme.colorScheme.primary,
             content = MaterialTheme.colorScheme.onPrimary,
-            overline = result.shopName,
-            title = stringResource(R.string.checkin_done_title),
+            label = stringResource(R.string.checkin_done_title),
+            title = result.shopName,
             caption = stringResource(
                 R.string.checkin_done_caption,
                 formatDistance(result.distanceM),
                 SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(checkedAt)),
             ),
+            detail = count?.let { stringResource(R.string.checkin_done_count, it) },
         )
         is CheckinResult.TooFar -> StatusHero(
             icon = R.drawable.ic_place,
@@ -217,6 +220,8 @@ private fun StatusHero(
     title: String,
     caption: String,
     overline: String? = null,
+    /** 제목 위 작은 연두 라벨(완료 표시) */
+    label: String? = null,
     detail: String? = null,
 ) {
     Column(
@@ -231,10 +236,18 @@ private fun StatusHero(
         overline?.let {
             Text(it, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
+        label?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape).padding(horizontal = Spacing.m, vertical = 2.dp),
+            )
+        }
         Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
         Text(caption, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         detail?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
         }
     }
 }
@@ -248,7 +261,7 @@ internal fun formatDistance(meters: Int): String =
 private fun CheckinScreenPreview() {
     NightCleanTheme {
         CheckinScreen(
-            uiState = CheckinUiState.Done(CheckinResult.CheckedIn("[가게명]", 32), System.currentTimeMillis()),
+            uiState = CheckinUiState.Done(CheckinResult.CheckedIn("[가게명]", 32), System.currentTimeMillis(), count = 3),
             onScan = {}, onDone = {},
         )
     }

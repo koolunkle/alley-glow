@@ -65,13 +65,13 @@ class LoginViewModelTest {
     fun `빈 칸이 있으면 요청하지 않고 안내한다`() {
         val vm = viewModel(FakeAuth())
         vm.signIn(" ", "pw")
-        assertEquals("이메일과 비밀번호를 입력해 주세요.", (vm.uiState.value as LoginUiState.Input).error)
+        assertEquals(LoginError.EMPTY, (vm.uiState.value as LoginUiState.Input).error)
     }
 
     @Test
     fun `역할 없는 계정은 등록 안내를 보여준다`() {
         val vm = viewModel(FakeAuth(signInResult = Result.failure(UnregisteredAccountException())))
         vm.signIn("x@example.com", "pw")
-        assertEquals("등록되지 않은 계정이에요. 운영자에게 문의해 주세요.", (vm.uiState.value as LoginUiState.Input).error)
+        assertEquals(LoginError.UNREGISTERED, (vm.uiState.value as LoginUiState.Input).error)
     }
 }

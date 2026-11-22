@@ -6,8 +6,8 @@ data class ShopReport(
     val shopName: String,
     val month: Int,
     val nights: Int,
-    /** 이 가게에 체크인한 근무들의 수거량 합계(일반 + 재활용 + 꽁초) */
-    val collectedKg: Double,
+    /** 이 가게에 체크인한 근무들의 채운 봉투(100L) 합계. 무게는 선택 입력이라 봉투로 셈 */
+    val collectedBags: Int,
     val guests: Int,
     /** 시민이 홍보물 QR로 랜딩을 연 횟수 */
     val qrScans: Int = 0,
