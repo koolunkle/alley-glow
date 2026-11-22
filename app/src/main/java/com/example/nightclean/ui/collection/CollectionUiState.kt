@@ -13,6 +13,8 @@ data class CollectionForm(
     val note: String = "",
     /** 근무 종료 사진(저울 눈금 또는 채운 봉투)의 기기 내 파일 경로 */
     val photos: List<String> = emptyList(),
+    /** 청소 후 사진(근무 화면의 청소 전 사진과 같은 자리) */
+    val afterPhotos: List<String> = emptyList(),
 )
 
 sealed interface CollectionUiState {

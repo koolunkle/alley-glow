@@ -3,6 +3,7 @@ package com.example.nightclean.ui.collection
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.MAX_PHOTOS
 import com.example.nightclean.domain.model.ShiftRecord
 import com.example.nightclean.domain.model.Weight
@@ -24,6 +25,9 @@ class CollectionViewModel @Inject constructor(
     private val shiftId: String = checkNotNull(savedStateHandle["shiftId"])
     private val zoneId: String = checkNotNull(savedStateHandle["zoneId"])
     val startedAt: Long = checkNotNull(savedStateHandle["startedAt"])
+
+    /** 근무 화면에서 찍은 청소 전 사진(기기 내 경로) */
+    val beforePhotos: List<String> = savedStateHandle.stringList("beforePhotos")
 
     /** 이 화면에 들어온 시각을 근무 종료 시각으로 고정 */
     val endedAt: Long = savedStateHandle.get<Long>(KEY_ENDED_AT)
@@ -48,6 +52,12 @@ class CollectionViewModel @Inject constructor(
     }
 
     fun removePhoto(index: Int) = edit { it.copy(photos = it.photos.filterIndexed { i, _ -> i != index }) }
+
+    fun addAfterPhoto(path: String) = edit { form ->
+        if (form.afterPhotos.size < MAX_BEFORE_AFTER_PHOTOS) form.copy(afterPhotos = form.afterPhotos + path) else form
+    }
+
+    fun removeAfterPhoto(index: Int) = edit { it.copy(afterPhotos = it.afterPhotos.filterIndexed { i, _ -> i != index }) }
 
     fun submit() {
         val state = _uiState.value as? CollectionUiState.Editing ?: return
@@ -79,6 +89,8 @@ class CollectionViewModel @Inject constructor(
             weight = weight,
             note = form.note.trim().ifEmpty { null },
             photos = form.photos,
+            beforePhotos = beforePhotos,
+            afterPhotos = form.afterPhotos,
         )
         _uiState.value = state.copy(isSubmitting = true, error = null)
         viewModelScope.launch {
@@ -102,6 +114,13 @@ class CollectionViewModel @Inject constructor(
         const val MAX_G = 100_000.0
         const val MAX_NOTE = 1000
     }
+}
+
+/** 내비게이션은 List<String> 인자를 배열로 넣기도 해 둘 다 받음 */
+private fun SavedStateHandle.stringList(key: String): List<String> = when (val value = get<Any>(key)) {
+    is Array<*> -> value.filterIsInstance<String>()
+    is List<*> -> value.filterIsInstance<String>()
+    else -> emptyList()
 }
 
 /** 0 이상 max 이하 숫자. 소수점 쉼표도 허용 */

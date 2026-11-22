@@ -30,9 +30,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.AdSlot
+import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.currentAt
 import com.example.nightclean.domain.model.nextAfter
 import com.example.nightclean.domain.model.nightHour
+import com.example.nightclean.ui.common.PhotoRow
 import com.example.nightclean.ui.theme.NightCleanTheme
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -44,10 +46,11 @@ import java.util.Locale
 fun ShiftRoute(
     zoneId: String,
     onCheckin: (shiftId: String, startedAt: Long) -> Unit,
-    onFinish: (shiftId: String, startedAt: Long) -> Unit,
+    onFinish: (shiftId: String, startedAt: Long, beforePhotos: List<String>) -> Unit,
     viewModel: ShiftViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val beforePhotos by viewModel.beforePhotos.collectAsStateWithLifecycle()
     val now by produceState(System.currentTimeMillis()) {
         while (true) {
             delay(1_000)
@@ -59,9 +62,12 @@ fun ShiftRoute(
         uiState = uiState,
         startedAt = viewModel.startedAt,
         now = now,
+        beforePhotos = beforePhotos,
         onRetry = viewModel::load,
+        onAddBeforePhoto = viewModel::addBeforePhoto,
+        onRemoveBeforePhoto = viewModel::removeBeforePhoto,
         onCheckin = { onCheckin(viewModel.shiftId, viewModel.startedAt) },
-        onFinish = { onFinish(viewModel.shiftId, viewModel.startedAt) },
+        onFinish = { onFinish(viewModel.shiftId, viewModel.startedAt, beforePhotos) },
     )
 }
 
@@ -71,7 +77,10 @@ fun ShiftScreen(
     uiState: ShiftUiState,
     startedAt: Long,
     now: Long,
+    beforePhotos: List<String>,
     onRetry: () -> Unit,
+    onAddBeforePhoto: (String) -> Unit,
+    onRemoveBeforePhoto: (Int) -> Unit,
     onCheckin: () -> Unit,
     onFinish: () -> Unit,
 ) {
@@ -108,6 +117,15 @@ fun ShiftScreen(
                     current?.let { SlotCard("지금 광고 중", it, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary) }
                     next?.let { SlotCard("다음 슬롯", it, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface) }
                 }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("청소 전 사진 (선택, 최대 ${MAX_BEFORE_AFTER_PHOTOS}장)", fontWeight = FontWeight.Bold)
+                Text(
+                    "치우기 전에 찍어 두면 근무 종료 때 같은 자리에서 청소 후 사진을 찍어요",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                PhotoRow(beforePhotos, MAX_BEFORE_AFTER_PHOTOS, "청소 전 사진", enabled = true, onAddBeforePhoto, onRemoveBeforePhoto)
             }
             Spacer(Modifier.weight(1f))
             Button(onClick = onCheckin, modifier = Modifier.fillMaxWidth().height(56.dp)) {
@@ -172,7 +190,8 @@ private fun ShiftScreenPreview() {
             ),
             startedAt = now - 84 * 60_000,
             now = now,
-            onRetry = {}, onCheckin = {}, onFinish = {},
+            beforePhotos = emptyList(),
+            onRetry = {}, onAddBeforePhoto = {}, onRemoveBeforePhoto = {}, onCheckin = {}, onFinish = {},
         )
     }
 }

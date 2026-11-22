@@ -9,6 +9,12 @@ sealed interface AppRoute {
     @Serializable data object ZoneMap : AppRoute
     @Serializable data class Shift(val zoneId: String) : AppRoute
     @Serializable data class Checkin(val shiftId: String, val zoneId: String, val startedAt: Long) : AppRoute
-    @Serializable data class Collection(val shiftId: String, val zoneId: String, val startedAt: Long) : AppRoute
+    /** beforePhotos: 근무 화면에서 찍은 청소 전 사진의 기기 내 경로 */
+    @Serializable data class Collection(
+        val shiftId: String,
+        val zoneId: String,
+        val startedAt: Long,
+        val beforePhotos: List<String> = emptyList(),
+    ) : AppRoute
     @Serializable data object ShopReport : AppRoute
 }

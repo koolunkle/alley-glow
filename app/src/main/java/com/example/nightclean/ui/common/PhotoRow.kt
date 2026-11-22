@@ -1,0 +1,101 @@
+package com.example.nightclean.ui.common
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import com.example.nightclean.image.decodeUpright
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+
+/**
+ * 찍은 사진 썸네일(삭제 가능) + 촬영 버튼. 시스템 카메라로만 찍음(갤러리 선택 불가).
+ * 사진은 캐시 photos/ 에 저장되고, 경로를 onAdd로 넘김. 업로드는 호출하는 쪽에서
+ */
+@Composable
+fun PhotoRow(
+    photos: List<String>,
+    max: Int,
+    label: String,
+    enabled: Boolean,
+    onAdd: (path: String) -> Unit,
+    onRemove: (index: Int) -> Unit,
+) {
+    // IDE 미리보기에는 카메라를 띄울 액티비티가 없어 썸네일 자리만 그림
+    if (LocalInspectionMode.current) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            repeat(photos.size) { Box(Modifier.size(88.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.background)) }
+        }
+        return
+    }
+    val context = LocalContext.current
+    // 촬영 중 화면이 재생성돼도 저장할 파일 경로를 잃지 않게
+    var pending by rememberSaveable { mutableStateOf<String?>(null) }
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val path = pending ?: return@rememberLauncherForActivityResult
+        pending = null
+        if (saved) onAdd(path) else File(path).delete()
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        photos.forEachIndexed { index, path ->
+            PhotoThumb(path, "$label ${index + 1}", enabled) { onRemove(index) }
+        }
+        if (photos.size < max) {
+            OutlinedButton(
+                onClick = {
+                    val file = File(File(context.cacheDir, "photos").apply { mkdirs() }, "photo-${System.currentTimeMillis()}.jpg")
+                    pending = file.path
+                    takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+                },
+                enabled = enabled,
+                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(0.dp),
+                modifier = Modifier.size(88.dp),
+            ) { Text("촬영\n${photos.size}/$max", textAlign = TextAlign.Center) }
+        }
+    }
+}
+
+/** EXIF 방향을 반영해 작게 디코딩(IO 스레드) */
+@Composable
+private fun PhotoThumb(path: String, label: String, enabled: Boolean, onRemove: () -> Unit) {
+    val image by produceState<ImageBitmap?>(null, path) {
+        value = withContext(Dispatchers.IO) { decodeUpright(path, maxSide = 264)?.asImageBitmap() }
+    }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(88.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.background)) {
+            image?.let { Image(it, contentDescription = label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+        }
+        TextButton(onClick = onRemove, enabled = enabled) { Text("삭제") }
+    }
+}

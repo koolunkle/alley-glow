@@ -52,6 +52,16 @@ class ShiftViewModelTest {
     }
 
     @Test
+    fun `청소 전 사진은 2장까지 저장 상태에 담기고 지울 수 있다`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(Result.success(slots), handle)
+        listOf("a", "b", "c").forEach(vm::addBeforePhoto)
+        assertEquals(listOf("a", "b"), vm.beforePhotos.value)
+        vm.removeBeforePhoto(0)
+        assertEquals(listOf("b"), handle.get<List<String>>("beforePhotos"))
+    }
+
+    @Test
     fun `자정을 넘긴 시각도 현재와 다음 슬롯을 찾는다`() {
         assertEquals("가게 A", slots.currentAt(nightHour(21))?.shopName)
         assertEquals("가게 B", slots.nextAfter(nightHour(21))?.shopName)

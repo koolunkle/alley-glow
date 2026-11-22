@@ -17,10 +17,16 @@ class ShiftRepositoryImpl @Inject constructor(
     // 근무 → 사진 → 수거량 순서(collections가 shifts를 참조하고 사진 경로를 담음)
     override suspend fun finishShift(record: ShiftRecord): Result<Unit> = try {
         remote.upsertShift(record.toShiftDto())
-        val photoPaths = record.photos.mapIndexed { i, local ->
-            photos.upload(local, "${record.shiftId}/photo-${i + 1}.jpg")
+        // 파일 이름 고정(photo-1, before-1 …)이라 재시도해도 같은 파일을 덮어씀
+        suspend fun upload(locals: List<String>, prefix: String) = locals.mapIndexed { i, local ->
+            photos.upload(local, "${record.shiftId}/$prefix-${i + 1}.jpg")
         }
-        remote.insertCollection(record.toCollectionDto(photoPaths))
+        val collection = record.toCollectionDto(
+            photoPaths = upload(record.photos, "photo"),
+            beforePhotoPaths = upload(record.beforePhotos, "before"),
+            afterPhotoPaths = upload(record.afterPhotos, "after"),
+        )
+        remote.insertCollection(collection)
         Result.success(Unit)
     } catch (e: CancellationException) {
         throw e

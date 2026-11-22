@@ -15,11 +15,15 @@ data class ShiftRecord(
     val note: String?,
     /** 근무 종료 사진의 기기 내 파일 경로(1~3장). 저장할 때 업로드 */
     val photos: List<String>,
+    /** 청소 전·후 사진(같은 자리, 같은 각도). 선택, 각 최대 2장 */
+    val beforePhotos: List<String> = emptyList(),
+    val afterPhotos: List<String> = emptyList(),
 )
 
 data class Weight(val generalKg: Double, val recycleKg: Double, val buttsG: Double)
 
 const val MAX_PHOTOS = 3
+const val MAX_BEFORE_AFTER_PHOTOS = 2
 
 // shortcut: 100L 봉투 1장 평균 무게 가정값, 이태원 시범 실측(봉투 수와 kg)이 나오면 그 평균으로
 const val KG_PER_BAG_ESTIMATE = 6.0

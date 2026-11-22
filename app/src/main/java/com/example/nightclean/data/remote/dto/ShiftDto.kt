@@ -30,6 +30,8 @@ data class CollectionDto(
     val note: String?,
     /** Storage 경로(버킷 제외) */
     @SerialName("photo_paths") val photoPaths: List<String>,
+    @SerialName("before_photo_paths") val beforePhotoPaths: List<String>,
+    @SerialName("after_photo_paths") val afterPhotoPaths: List<String>,
 )
 
 fun ShiftRecord.toShiftDto() = ShiftDto(
@@ -39,7 +41,7 @@ fun ShiftRecord.toShiftDto() = ShiftDto(
     endedAt = endedAt.toIsoUtc(),
 )
 
-fun ShiftRecord.toCollectionDto(photoPaths: List<String>) = CollectionDto(
+fun ShiftRecord.toCollectionDto(photoPaths: List<String>, beforePhotoPaths: List<String>, afterPhotoPaths: List<String>) = CollectionDto(
     shiftId = shiftId,
     bagsByHour = bagsByHour,
     weighed = weight != null,
@@ -48,6 +50,8 @@ fun ShiftRecord.toCollectionDto(photoPaths: List<String>) = CollectionDto(
     buttsG = weight?.buttsG,
     note = note,
     photoPaths = photoPaths,
+    beforePhotoPaths = beforePhotoPaths,
+    afterPhotoPaths = afterPhotoPaths,
 )
 
 /** minSdk 24라 java.time 대신 SimpleDateFormat */

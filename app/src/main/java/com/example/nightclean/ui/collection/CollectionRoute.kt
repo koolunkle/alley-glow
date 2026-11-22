@@ -1,10 +1,6 @@
 package com.example.nightclean.ui.collection
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,26 +23,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -55,21 +40,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.BAG_SLOT_HOURS
 import com.example.nightclean.domain.model.BUTT_REWARD_WON_PER_GRAM
 import com.example.nightclean.domain.model.HOURLY_WAGE_WON
 import com.example.nightclean.domain.model.KG_PER_BAG_ESTIMATE
+import com.example.nightclean.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import com.example.nightclean.domain.model.MAX_PHOTOS
-import com.example.nightclean.domain.model.estimateKgFromBags
 import com.example.nightclean.domain.model.estimateIncome
-import com.example.nightclean.image.decodeUpright
+import com.example.nightclean.domain.model.estimateKgFromBags
+import com.example.nightclean.ui.common.PhotoRow
 import com.example.nightclean.ui.theme.NightCleanTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 fun CollectionRoute(
@@ -80,31 +62,21 @@ fun CollectionRoute(
     LaunchedEffect(uiState) {
         if (uiState is CollectionUiState.Submitted) onSubmitted()
     }
-    val context = LocalContext.current
-    // 촬영 중 화면이 재생성돼도 저장할 파일 경로를 잃지 않게
-    var pendingPhoto by rememberSaveable { mutableStateOf<String?>(null) }
-    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
-        val path = pendingPhoto ?: return@rememberLauncherForActivityResult
-        pendingPhoto = null
-        if (saved) viewModel.addPhoto(path) else File(path).delete()
-    }
     (uiState as? CollectionUiState.Editing)?.let { editing ->
         CollectionScreen(
             uiState = editing,
             workedMinutes = (viewModel.endedAt - viewModel.startedAt) / 60_000,
+            beforePhotoCount = viewModel.beforePhotos.size,
             onChangeBags = viewModel::changeBags,
             onGeneralKgChange = viewModel::changeGeneralKg,
             onRecycleKgChange = viewModel::changeRecycleKg,
             onButtsGChange = viewModel::changeButtsG,
             onNoteChange = viewModel::changeNote,
             onWeighedChange = viewModel::setWeighed,
-            onTakePhoto = {
-                // 시스템 카메라로만 촬영(갤러리 선택 불가). 파일은 캐시의 photos/에
-                val file = File(File(context.cacheDir, "photos").apply { mkdirs() }, "photo-${System.currentTimeMillis()}.jpg")
-                pendingPhoto = file.path
-                takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
-            },
+            onAddPhoto = viewModel::addPhoto,
             onRemovePhoto = viewModel::removePhoto,
+            onAddAfterPhoto = viewModel::addAfterPhoto,
+            onRemoveAfterPhoto = viewModel::removeAfterPhoto,
             onSubmit = viewModel::submit,
         )
     }
@@ -114,14 +86,18 @@ fun CollectionRoute(
 fun CollectionScreen(
     uiState: CollectionUiState.Editing,
     workedMinutes: Long,
+    /** 근무 화면에서 찍은 청소 전 사진 수(후 사진 안내용) */
+    beforePhotoCount: Int,
     onChangeBags: (slot: Int, delta: Int) -> Unit,
     onGeneralKgChange: (String) -> Unit,
     onRecycleKgChange: (String) -> Unit,
     onButtsGChange: (String) -> Unit,
     onNoteChange: (String) -> Unit,
     onWeighedChange: (Boolean) -> Unit,
-    onTakePhoto: () -> Unit,
+    onAddPhoto: (String) -> Unit,
     onRemovePhoto: (Int) -> Unit,
+    onAddAfterPhoto: (String) -> Unit,
+    onRemoveAfterPhoto: (Int) -> Unit,
     onSubmit: () -> Unit,
 ) {
     val form = uiState.form
@@ -163,36 +139,27 @@ fun CollectionScreen(
                         "추정 약 ${formatKg(estimateKgFromBags(bags))}kg (봉투 ${bags}장 × ${formatKg(KG_PER_BAG_ESTIMATE)}kg, 가정값)",
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(
-                        "추정치는 저장하지 않아요. 수거량 보상은 저울로 잰 무게로만 계산돼요.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Hint("추정치는 저장하지 않아요. 수거량 보상은 저울로 잰 무게로만 계산돼요.")
                 }
             }
 
             Section {
                 val what = if (form.weighed) "저울" else "채운 봉투"
                 Text("$what 사진 (필수, 최대 ${MAX_PHOTOS}장)", fontWeight = FontWeight.Bold)
-                Text(
-                    if (form.weighed) "봉투를 저울에 올리고 눈금이 보이게 찍어 주세요" else "채운 봉투가 모두 보이게 찍어 주세요",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Hint(if (form.weighed) "봉투를 저울에 올리고 눈금이 보이게 찍어 주세요" else "채운 봉투가 모두 보이게 찍어 주세요")
+                PhotoRow(form.photos, MAX_PHOTOS, "$what 사진", enabled, onAddPhoto, onRemovePhoto)
+            }
+
+            Section {
+                Text("청소 후 사진 (선택, 최대 ${MAX_BEFORE_AFTER_PHOTOS}장)", fontWeight = FontWeight.Bold)
+                Hint(
+                    if (beforePhotoCount > 0) {
+                        "청소 전 사진 ${beforePhotoCount}장과 같은 자리, 같은 각도로 찍어 주세요"
+                    } else {
+                        "청소 전 사진은 근무 화면에서 찍어요. 같은 자리, 같은 각도로 찍으면 비교하기 좋아요"
+                    },
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    form.photos.forEachIndexed { index, path ->
-                        PhotoThumb(path, "$what 사진 ${index + 1}", enabled) { onRemovePhoto(index) }
-                    }
-                    if (form.photos.size < MAX_PHOTOS) {
-                        OutlinedButton(
-                            onClick = onTakePhoto,
-                            enabled = enabled,
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.size(88.dp),
-                        ) { Text("촬영\n${form.photos.size}/${MAX_PHOTOS}", textAlign = TextAlign.Center) }
-                    }
-                }
+                PhotoRow(form.afterPhotos, MAX_BEFORE_AFTER_PHOTOS, "청소 후 사진", enabled, onAddAfterPhoto, onRemoveAfterPhoto)
             }
 
             OutlinedTextField(
@@ -242,6 +209,11 @@ private fun Section(content: @Composable () -> Unit) {
 }
 
 @Composable
+private fun Hint(text: String) {
+    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
 private fun BagStepper(label: String, count: Int, enabled: Boolean, onChange: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, modifier = Modifier.weight(1f))
@@ -264,22 +236,6 @@ private fun BagStepper(label: String, count: Int, enabled: Boolean, onChange: (I
             contentPadding = PaddingValues(0.dp),
             modifier = Modifier.size(56.dp).semantics { contentDescription = "$label 봉투 하나 더하기" },
         ) { Text("+") }
-    }
-}
-
-/** 촬영한 사진 미리보기. EXIF 방향을 반영해 작게 디코딩(IO 스레드) */
-@Composable
-private fun PhotoThumb(path: String, label: String, enabled: Boolean, onRemove: () -> Unit) {
-    val image by produceState<ImageBitmap?>(null, path) {
-        value = withContext(Dispatchers.IO) {
-            decodeUpright(path, maxSide = 264)?.asImageBitmap()
-        }
-    }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(88.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.background)) {
-            image?.let { Image(it, contentDescription = label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
-        }
-        TextButton(onClick = onRemove, enabled = enabled) { Text("삭제") }
     }
 }
 
@@ -333,8 +289,10 @@ private fun CollectionScreenPreview() {
                 form = CollectionForm(bags = listOf(1, 2, 1, 0), generalKg = "12.5", recycleKg = "3", buttsG = "250"),
             ),
             workedMinutes = 240,
+            beforePhotoCount = 1,
             onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {}, onButtsGChange = {},
-            onNoteChange = {}, onWeighedChange = {}, onTakePhoto = {}, onRemovePhoto = {}, onSubmit = {},
+            onNoteChange = {}, onWeighedChange = {}, onAddPhoto = {}, onRemovePhoto = {},
+            onAddAfterPhoto = {}, onRemoveAfterPhoto = {}, onSubmit = {},
         )
     }
 }

@@ -137,6 +137,25 @@ class CollectionViewModelTest {
     }
 
     @Test
+    fun `청소 전 사진은 근무 화면에서 받고 청소 후 사진은 2장까지 담아 함께 저장한다`() {
+        val repo = FakeShifts()
+        // 내비게이션이 리스트 인자를 배열로 넣는 경우
+        val vm = CollectionViewModel(
+            repo,
+            SavedStateHandle(
+                mapOf("shiftId" to "s1", "zoneId" to "G01", "startedAt" to 1_000L, "endedAt" to 5_000L, "beforePhotos" to arrayOf("b1")),
+            ),
+        )
+        assertEquals(listOf("b1"), vm.beforePhotos)
+        listOf("a1", "a2", "a3").forEach(vm::addAfterPhoto)
+        vm.removeAfterPhoto(0)
+        vm.addPhoto("p1")
+        vm.submit()
+        assertEquals(listOf("b1"), repo.saved?.beforePhotos)
+        assertEquals(listOf("a2"), repo.saved?.afterPhotos)
+    }
+
+    @Test
     fun `추정 무게는 봉투 수에 가정값을 곱한다`() {
         assertEquals(18.0, estimateKgFromBags(3), 0.0)
         assertEquals(0.0, estimateKgFromBags(-1), 0.0)
