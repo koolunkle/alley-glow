@@ -9,13 +9,13 @@
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 본인 행만 읽기(`auth.uid()`). 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게. 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
 - `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], weighed, general_kg·recycle_kg·butts_g(weighed=false면 모두 null, check 제약), note, photo_paths text[] 0~3, before_photo_paths·after_photo_paths text[] 각 0~2)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
 - Storage `collection-photos`(비공개, JPEG 5MB): 근무 종료 사진(저울을 쓰면 저울 눈금, 아니면 채운 봉투). 경로 `{user_id}/{shift_id}/photo-{n}.jpg`, 청소 전후는 `before-{n}.jpg`·`after-{n}.jpg`, 워커 본인 폴더만 쓰기·읽기·덮어쓰기. 상인은 자기 가게에 체크인한 근무의 청소 전후 사진만 읽는다(봉투·저울 사진 제외, 판정은 API에 노출되지 않는 `private.shop_can_read_photo`). 앱은 `/storage/v1/object/authenticated/...`로 로그인 토큰을 실어 내려받는다. 근무 종료 때 EXIF 방향을 반영해(`image/decodeUpright`, 썸네일도 같이 씀) 긴 변 1600px JPEG로 줄이고 `x-upsert`로 올리므로 재시도해도 같은 파일. 앱은 1장 이상을 요구한다. 시연용 예시 행은 봉투·저울 사진 없이 청소 전·후 각 1장(`before-1.jpg`·`after-1.jpg`, "시연용 예시" 표기 그림, 실사 아님)만 있다. Storage 파일은 SQL이 아니라 대시보드나 Storage API로 지운다.
-- 상인 리포트의 kg은 저울로 잰 행만 더한다(null은 sum에서 빠짐). 앱은 꽁초 칸을 두지 않아 저울을 쓴 근무도 `butts_g`는 0으로 저장한다.
+- 상인 리포트의 "치운 쓰레기"는 들른 근무들의 채운 봉투 합계(`collected_bags`)다. 무게가 선택 입력이라 kg 합계(`collected_kg`, 저울로 잰 행만)는 앱이 쓰지 않고, v1.0 APK가 필수로 읽어 함수에만 남겨 둔다. 앱은 꽁초 칸을 두지 않아 저울을 쓴 근무도 `butts_g`는 0으로 저장한다.
 - `public.shops(id, name, lat, lng, qr_code unique, intro, menu, benefit)`: anon/authenticated 읽기. 지금은 이태원역 주변 예시 5곳(`NC-SHOP-001`~`005`), 소개·메뉴·혜택은 `[대괄호]` 자리표시. 가게 QR 값은 QR 랜딩 주소(`…/?s=NC-SHOP-001`)이고, 앱은 `s` 값(그 밖의 URL이면 마지막 경로)을 가게 코드로 쓴다.
 - `public.qr_scans(id uuid, shop_id, scanned_at, score 1~5)`: 시민의 QR 랜딩 방문과 청결도 평가. 익명은 테이블에 접근하지 못하고 `rpc/qr_visit`(가게 정보 + 스캔 기록, 모르는 코드면 null)과 `rpc/qr_rate`(스캔당 1번, 하루 안)만 쓴다.
 - `public.checkins(shift_id → shifts, shop_id → shops, checked_at, lat, lng, distance_m 0~50, unique(shift_id, shop_id))`: 직접 쓰기 권한 없음. `rpc/check_in`(security definer)만 쓴다. 이 함수가 워커 확인 → 근무 행 보장 → QR로 가게 조회 → 하버사인 거리 50m 이하면 기록까지 한다. 모르는 QR이면 빈 결과.
 - `public.track_points(shift_id → shifts, recorded_at, lat, lng, accuracy_m)`: 근무 중 GPS. 워커 본인 근무에만 쓰고 읽는다. 앱의 `data/tracking/LocationTrackingService`(위치 타입 포그라운드 서비스)가 30초마다 받아 5개씩(약 2분 30초마다) 올리고, 올리기 전에 근무 행이 없으면 종료 시각 없이 만든다(ignore-duplicates). 근무 화면의 ViewModel이 사라질 때(근무 종료 저장 또는 화면 이탈) 멈춘다.
-- `public.guest_visits(shop_id, created_at)`: "클린 보고 왔어요" 손님 +1. 상인 본인 가게만 쓰고 읽는다.
-- `rpc/shop_report`(GET, security definer): 호출한 상인 가게의 이번 달 집계 JSON(청소한 밤, 들른 근무의 수거량 kg, 손님 수, QR 스캔 수, 청결도 평균, 최근 5밤과 밤마다 청소 전·후 사진 경로 1장씩). 서울 시각 기준이고 밤 날짜는 '서울 시각 − 6시간'. 상인이 아니면 null. 상인에게 워커 테이블을 열지 않으려고 함수로 둔다.
+- `public.guest_visits(shop_id, created_at)`: 광고 보고 온 손님 +1(캠페인 문구 "클린 워커 보고 왔어요", 랜딩 웹과 같은 문구). 상인 본인 가게만 쓰고 읽는다.
+- `rpc/shop_report`(GET, security definer): 호출한 상인 가게의 이번 달 집계 JSON(청소한 밤, 들른 근무의 채운 봉투 수(와 v1.0용 kg), 손님 수, QR 스캔 수, 청결도 평균, 최근 5밤과 밤마다 청소 전·후 사진 경로 1장씩). 서울 시각 기준이고 밤 날짜는 '서울 시각 − 6시간'. 상인이 아니면 null. 상인에게 워커 테이블을 열지 않으려고 함수로 둔다.
 - 시연 동선·사전 SQL(12월로 옮기기, 데모 가게를 행사장으로)·당일 체크리스트는 `docs/demo.md`.
 - 시연용 예시 데이터: 11/13·14·20·21(금·토) 19~23시 근무 4건, 수거량 4건(특이사항 `[시연용 예시]`), 체크인 10건, 데모 상인 가게 손님 7건, 같은 네 밤 데모 상인 가게 QR 스캔 23건(평가 9건, 평균 4.2점), 근무마다 청소 전·후 예시 그림 1장씩. 근무 id는 `00000000-0000-4000-8000-` 접두. 실제 시범 데이터와 섞이지 않게 본선 뒤나 실측 데이터를 넣기 전에 지운다: `delete from public.shifts where id::text like '00000000-0000-4000-8000-%';`(수거량·체크인은 cascade) 그리고 `delete from public.guest_visits where created_at < '2026-11-22';`, `delete from public.qr_scans where scanned_at < '2026-11-22';`
 - 쓰기가 필요한 테이블은 `authenticated` + `auth.uid()` 기준 RLS로 연다. anon 쓰기는 열지 않는다(시민 QR 웹 제외).
@@ -31,8 +31,8 @@
 - 디자인 토큰: 글꼴 Pretendard(`res/font`, Regular·Bold·Black만, OFL 사본 `res/raw/pretendard_license.txt`), 글자 크기는 `ui/theme/Type.kt`의 단계 이름(`headlineSmall` 화면 제목, `titleLarge` 카드 제목·큰 숫자, `displayMedium` 타이머 등)으로만, 간격은 `Spacing`(4·8·12·16·24), 모서리는 `MaterialTheme.shapes`(12·20·24), 주 버튼 높이 `TouchHeight` 56dp.
 - 역할 첫 화면(지도, 상인 리포트)은 `ui/common/AppTopBar`(서비스 이름 + 계정 아이콘 → 이름·역할·로그아웃 메뉴)를 쓴다.
 - 연두(primary)는 "지금 누를 것"(주 버튼, +1)과 작은 라벨에만 쓴다. 정보 카드에 연두 테두리·연두 바탕을 쓰지 않는다. 숫자와 그 숫자를 바꾸는 버튼은 한 카드에 둔다. 아이콘은 `res/drawable/ic_*.xml`(Material Icons 경로, 라이브러리 없이).
-- 화면 문구는 `res/values/strings.xml`(`stringResource`)에 둔다. 제목·버튼은 짧은 명사형, 안내는 한 문장. 지금은 공통·로그인·지도·근무 중·체크인·근무 종료만 옮겼고 나머지 화면은 화면별 정리 때 옮긴다.
-- 사용자에게 보이는 오류 문구는 한글 고정 문구를 쓴다. 예외 원문은 보여주지 않는다.
+- 화면 문구는 `res/values/strings.xml`(`stringResource`, 서비스는 `getString`)에 둔다. 제목·버튼은 짧은 명사형, 안내는 한 문장. ViewModel은 문구 대신 오류 종류(enum·object)를 넘기고 화면이 리소스로 바꾼다. 단위가 붙는 숫자 포맷(`formatWon`·`formatDistance` 등, 테스트 있음)만 코드에 둔다.
+- 사용자에게 보이는 오류 문구는 한글 고정 문구를 쓴다. 예외 원문은 보여주지 않는다. 화면 안 오류·실패 안내는 `ui/common/InlineNotice`(본문색 글자 + 주황 경고 아이콘, 남색 줄)로 보인다.
 - 과한 설계를 피한다. 임시 처리에는 `// shortcut: <한계>, <바꿀 시점>` 주석을 단다.
 
 ## 현재 상태 (MVP 화면 시안 기준)
@@ -43,10 +43,10 @@
 | (시안 없음) 로그인 | Login | 이메일 로그인, 세션 복원, 역할별 첫 화면(워커 → 지도, 상인 → 리포트), 로그아웃 | - |
 | 1. 구역 추천 지도 | ZoneMap | 상단바(계정 아이콘 → 이름(profiles.display_name, 데모 워커는 "이태원 1조")·역할·로그아웃), 36칸 격자 카드(색은 실제 점수 폭으로 펼침, 이태원역 핀(`G20` 고정)은 칸 정중앙, 상위 3칸 순위 숫자는 오른쪽 위, 범례는 칸 모양 견본 5단계, 출처 한 줄 → 누르면 전체), 1위 구역 미리 선택, 구역 카드(추천 순위, 추천 지수 0~100과 ⓘ 누르면 계산 설명, 지표 3칸: 밤 인구와 평일 대비, 가까운 휴지통, 심야 매출) 안의 근무 시작 | 시간대 칩(시간대별 점수 필요) |
 | 2. 근무 중 | Shift | 상태 칩(연두 점, GPS 기록 중 표시)·긴급 연락 칩(112·119 전화 앱 열기), 근무 시간 타이머와 시작 시각·구역 이름(지도에서 넘김), 위치 기록 꺼짐 배너 → 동의 → GPS 기록(알림), 같은 높이 카드 2개: 체크인 수 + QR 체크인(화면 복귀 때 갱신) / 봉투 수 + −1·+1(누른 시각의 시간대로, 근무 종료 폼에 넘김), 광고 카드(지금 광고 연두 라벨 + 다음 광고 한 줄, ad_slots), 청소 전 사진(선택 0~2장), 하단 고정 근무 종료(연두) | 기록 경로 표시·구역 이탈 비율, 긴급 연락에 운영팀 번호 |
-| 3. 가게 체크인 | Checkin | 상단 뒤로 가기 바(`ui/common/SubTopBar`), 들어오면 스캐너 바로 열기(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 결과는 모두 같은 틀(큰 원 아이콘 + 가게명 + 제목 + 한 줄 설명: 완료 연두, 거리 초과·모르는 QR·오류 주황), 성공 뒤 주 버튼은 근무 화면으로·실패 뒤는 다시 스캔 | 이번 슬롯 체크인 목록 |
+| 3. 가게 체크인 | Checkin | 상단 뒤로 가기 바(`ui/common/SubTopBar`), 들어오면 스캐너 바로 열기(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 결과는 모두 같은 틀(중앙보다 조금 위, 큰 원 아이콘 + 제목 + 한 줄 설명: 완료는 연두 원·"체크인 완료" 라벨·가게명 제목·이번 근무 몇 번째 체크인, 거리 초과·모르는 QR·오류는 주황), 성공 뒤 주 버튼은 근무 화면으로·실패 뒤는 다시 스캔(보조 버튼은 회색 글자) | 이번 슬롯 체크인 목록 |
 | 4. 근무 종료·수거량 입력 | Collection | 상단 뒤로 가기 바, 근무 요약 카드(근무 시간, 시급제 예상 수당), 입력 카드(`ui/common/SectionCard`, 필수/선택 칩): 시간대별 봉투 수(근무 중 기록이 기본값, 합계)·채운 봉투 사진(필수 1~3장)·청소 후 사진(선택 0~2장)·무게(선택, 일반·재활용 kg 칸, 하나라도 적으면 저울 사용·빈 칸은 0, 둘 다 비우면 저울 없음)·특이사항, 하단 고정 근무 종료하기, shifts·collections·Storage 저장 | 앱 프로세스가 재생성되면 입력 중인 폼(무게·봉투 수·사진) 초기화 |
-| 5. 상인 리포트 | ShopReport | 이번 달 청소한 밤, 치운 쓰레기(들른 근무 중 저울로 잰 양), QR 스캔 수, 거리 청결도(랜딩 평가 평균), 손님 +1 기록, 최근 청소 기록(밤마다 청소 전·후 썸네일), 화면 복귀 때 새로 받기, 로그아웃 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), 사진 크게 보기 |
-| 6. QR 랜딩 웹(시민) | `web/index.html` | 가게 이름·소개·메뉴, 오늘의 혜택과 암호, 카카오맵 길찾기, 청결도 평가 1~5, 스캔 기록. GitHub Pages(`.github/workflows/pages.yml`) | 가게 대표 사진, 현재 위치에서의 거리 |
+| 5. 상인 리포트 | ShopReport | 상단바(계정 메뉴에 가게 이름), 이번 달 지표 2×2 같은 높이 칸(청소한 밤, 치운 쓰레기(들른 근무의 채운 봉투 수), QR 스캔 수, 거리 청결도(랜딩 평가 평균)), 손님 카드("광고 보고 온 손님", 남색 카드 + 연두 +1), 최근 청소 기록 한 카드(구분선, 밤마다 날짜·시각·체크인 수와 청소 전·후 썸네일), 화면 복귀 때 새로 받기 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), 사진 크게 보기 |
+| 6. QR 랜딩 웹(시민) | `web/index.html` | 앱과 같은 디자인(상단 "Night Clean" + 연두 점 상태 칩 "이 골목은 지금 청소 중", 가게 카드, 혜택 카드: 연두 라벨 "오늘의 혜택" + 혜택 + 캠페인 문구, 연두 길찾기 버튼, 평가 카드 1~5 → 감사 표시, 오류는 주황 아이콘 안내 줄), 카카오맵 길찾기, 스캔 기록. GitHub Pages(`.github/workflows/pages.yml`) | 가게 대표 사진, 현재 위치에서의 거리 |
 
 - 사진 촬영과 썸네일은 `ui/common/PhotoRow` 하나를 쓴다(시스템 카메라, 캐시 photos/, EXIF 방향 반영, 카메라 아이콘 + 장수 칸, 썸네일 오른쪽 위 ×로 삭제). 업로드는 근무 종료 저장 때 한 번에.
 - 화면 이동: 로그인 → 지도(워커) 또는 상인 리포트(상인). 로그아웃은 스택을 비우고 로그인으로. 지도 → 근무 → 체크인(뒤로) / 근무 종료 → 지도(근무 기록은 스택에서 지움). 실제 기기에서 확인했다.
@@ -91,7 +91,8 @@
 - 출처 표기: "서울특별시 열린데이터광장(서울 생활인구, 가로쓰레기통 설치정보, 상권분석서비스), 서울특별시·KT".
 
 ## QR 랜딩 웹
-- 정적 HTML 1장(`web/index.html`), 라이브러리 없음. 가게 정보는 `textContent`로만 넣는다.
+- 정적 HTML 1장(`web/index.html`), 라이브러리 없음(글꼴만 jsDelivr의 Pretendard 1.3.9 CSS, 못 받으면 시스템 글꼴). 가게 정보는 `textContent`로만 넣는다. 한글은 `word-break: keep-all`.
+- 화면 확인은 DB에 스캔이 남지 않게 가짜 `config.js`(fetch를 가로채 예시 가게를 돌려줌)를 둔 사본으로 한다. 헤드리스 Chrome은 창이 500px보다 좁아지지 않으니 390px iframe에 넣어 캡처한다.
 - Supabase 접속 정보는 `web/config.js`(git 제외, 예시는 `config.example.js`). 배포는 `main`에 `web/`가 바뀌면 GitHub Actions가 Secrets(`SUPABASE_URL`, `SUPABASE_KEY`)로 `config.js`를 만들어 Pages에 올린다.
 - 로컬 확인: `web/config.js`를 만든 뒤 `web/index.html?s=NC-SHOP-001`을 브라우저로 연다.
 - 인쇄용 QR: `web/print.html`(배포 주소의 `print.html`). shops 전체를 읽어 가게마다 랜딩 주소 QR(한 변 10cm, 오류 정정 Q)과 캠페인 문구 카드를 A4에 2장씩. QR 생성은 cdnjs의 qrcodejs 1.0.0.
