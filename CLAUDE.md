@@ -4,7 +4,7 @@
 
 ## 백엔드
 - Supabase(PostgreSQL + PostgREST)를 쓴다.
-- `public.zones(grid_id text pk, name text, score real 0~1)`: RLS로 anon/authenticated 읽기만 허용. 이태원역 중심 6×6칸(250m)의 공공데이터 추천도(아래 '공공데이터 분석'). id `G00`~`G35`는 북→남, 서→동 순이라 `grid_id` 정렬이 곧 지도 배치다. 이름은 칸을 덮는 상권 이름(없으면 행정동) + 번호.
+- `public.zones(grid_id text pk, name text, score real 0~1, night_pop·weekday_pop·bin_dist_m int, night_sales bigint)`: RLS로 anon/authenticated 읽기만 허용. 이태원역 중심 6×6칸(250m)의 공공데이터 추천도(아래 '공공데이터 분석'). id `G00`~`G35`는 북→남, 서→동 순이라 `grid_id` 정렬이 곧 지도 배치다. 이름은 칸을 덮는 상권 이름(없으면 행정동) + 번호. 지표 열은 구역 카드용(금·토·평일 19~23시 인구, 가장 가까운 휴지통 거리, 21~24시 매출 분기 평균 원).
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement)`: 근무 중 광고 슬롯. 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 본인 행만 읽기(`auth.uid()`). 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게. 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
 - `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], weighed, general_kg·recycle_kg·butts_g(weighed=false면 모두 null, check 제약), note, photo_paths text[] 0~3, before_photo_paths·after_photo_paths text[] 각 0~2)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
@@ -36,7 +36,7 @@
 | 시안 보드 | 앱 화면 | 구현됨 | 남음 |
 |---|---|---|---|
 | (시안 없음) 로그인 | Login | 이메일 로그인, 세션 복원, 역할별 첫 화면(워커 → 지도, 상인 → 리포트), 로그아웃 | - |
-| 1. 구역 추천 지도 | ZoneMap | 36칸 격자(zones), 구역 선택, 근무 시작 | 시간대 칩(시간대별 점수 필요), 범례, 구역 카드(태그·시간대), 워커 이름, 이태원역 표시 |
+| 1. 구역 추천 지도 | ZoneMap | 36칸 격자(zones, 색은 실제 점수 폭으로 펼침), 상위 3칸 순위, 이태원역 표시(`G20` 고정), 범례, 구역 카드(추천도·순위, 금·토/평일 밤 인구, 가장 가까운 휴지통, 21~24시 매출), 공공데이터 출처, 근무 시작 | 시간대 칩(시간대별 점수 필요), 워커 이름 |
 | 2. 근무 중 | Shift | 근무 시간 타이머, 위치 기록 동의 → GPS 기록(상단 '근무 중 · GPS 기록 중', 알림), 현재·다음 광고 슬롯(ad_slots), 청소 전 사진(선택 0~2장), 이번 근무 체크인 수(화면 복귀 때 갱신), 채운 봉투 +1·되돌리기(누른 시각의 시간대로, 근무 종료 폼에 넘김), 긴급 연락(112·119 전화 앱 열기), 하단 고정 버튼 | 기록 경로 표시·구역 이탈 비율, 긴급 연락에 운영팀 번호 |
 | 3. 가게 체크인 | Checkin | QR 스캔(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 완료·거리 초과·모르는 QR 안내 | 이번 슬롯 체크인 목록 |
 | 4. 근무 종료·수거량 입력 | Collection | 시간대별 봉투 수(근무 중 기록을 기본값으로), 저울 사용 여부(기본 '저울 없음' → 봉투 수 × 6kg 추정 표시), 저울 사용 시 종류별 무게, 사진(필수 1~3장, 시스템 카메라, EXIF 방향 반영), 청소 후 사진(선택 0~2장), 특이사항, 예상 수입(시급·꽁초 보상은 저울 사용 시만), shifts·collections·Storage 저장 | 앱 프로세스가 재생성되면 입력 중인 폼(무게·봉투 수·사진) 초기화 |
