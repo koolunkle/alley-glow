@@ -76,7 +76,7 @@
 - 서비스 이름: 시안은 "클린나이트", PRD·메모·앱은 "야간 클린 워커".
 
 ## 공공데이터 분석
-- 스크립트 `analysis/`(파이썬 표준 라이브러리만): `geo.py`(GRS80 횡메르카토르 변환, xlsx·shapefile 읽기, `python analysis/geo.py`로 자체 점검), `geocode_bins.py`(휴지통 주소 → 좌표, 카카오 로컬 API, 키는 `local.properties`의 `kakao.key`), `zones.py`(추천도 → `data/zones_itaewon.csv`).
+- 스크립트 `analysis/`(파이썬 표준 라이브러리만): `geo.py`(GRS80 횡메르카토르 변환, xlsx·shapefile 읽기, `python analysis/geo.py`로 자체 점검), `geocode_bins.py`(휴지통 주소 → 좌표, 카카오 로컬 API, 키는 `local.properties`의 `kakao.key`), `zones.py`(추천도 → `data/zones_itaewon.csv`, 시간대별 36칸 인구 합계 → `data/pop_hourly_itaewon.csv`), `figures.py`(기획안용 그림 3장 → `docs/figures/`, Pillow + 맑은 고딕, 밝은 배경, 출처 문구 포함).
 - 원본은 `data/raw/`(git 제외: 생활인구 원본 재배포 금지, 카카오 변환 결과 저장 약관 불확실). 칸별 합계인 `data/zones_itaewon.csv`만 올린다.
 - 원본: 서울 생활인구 250m 격자(OA-22784, 일별 `250_LOCAL_RESD_YYYYMMDD`, CP949, 격자 id는 국가지점번호라 경계 파일 없이 UTM-K 좌표 계산), 가로쓰레기통 설치정보(OA-15069, 202511, 주소만), 상권 추정매출(OA-15572, 2025년), 상권 영역(OA-15560, shapefile, EPSG:5181).
 - 지표: 야간 인구 = 금·토(11/13·14) 19~23시 평균, 휴지통 공백 = 칸 중심에서 가장 가까운 휴지통까지 거리, 야간 매출 = 21~24시 매출(분기 평균)을 상권 영역과 겹친 면적 비율로 나눔. 36칸 안에서 최소-최대 정규화.
