@@ -10,5 +10,6 @@ sealed interface ZoneMapUiState {
     ) : ZoneMapUiState {
         val selectedZone: Zone? get() = zones.find { it.id == selectedZoneId }
     }
-    data class Error(val message: String) : ZoneMapUiState
+    /** 문구는 화면이 리소스로 보임 */
+    data object Error : ZoneMapUiState
 }

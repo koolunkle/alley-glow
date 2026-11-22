@@ -23,6 +23,8 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signOut() = remote.signOut()
 
+    override suspend fun displayName(): Result<String?> = result { remote.fetchProfile()?.displayName }
+
     /** 역할이 없는 계정은 세션을 남기지 않음 */
     private suspend fun role(): UserRole =
         remote.fetchProfile()?.toUserRole() ?: run {

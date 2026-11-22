@@ -22,6 +22,7 @@ class LoginViewModelTest {
         val session: Result<UserRole?> = Result.success(null),
         val signInResult: Result<UserRole> = Result.success(UserRole.WORKER),
     ) : AuthRepository {
+        override suspend fun displayName() = Result.success<String?>(null)
         var signedOut = false
         override suspend fun restoreSession() = session
         override suspend fun signIn(email: String, password: String) = signInResult

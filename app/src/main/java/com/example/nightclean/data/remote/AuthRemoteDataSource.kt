@@ -41,6 +41,6 @@ class AuthRemoteDataSource @Inject constructor(
 
     /** RLS로 본인 행만 돌아옴 */
     suspend fun fetchProfile(): ProfileDto? = client.get("profiles") {
-        parameter("select", "role")
+        parameter("select", "role,display_name")
     }.body<List<ProfileDto>>().firstOrNull()
 }
