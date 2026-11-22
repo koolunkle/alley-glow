@@ -10,12 +10,19 @@ data class ShiftRecord(
     val startedAt: Long,
     val endedAt: Long,
     val bagsByHour: List<Int>,
-    val generalKg: Double,
-    val recycleKg: Double,
-    val buttsG: Double,
+    /** 저울로 잰 무게. 저울이 없으면 null(봉투 수로만 기록) */
+    val weight: Weight?,
     val note: String?,
-    /** 저울 사진의 기기 내 파일 경로(1~3장). 저장할 때 업로드 */
-    val scalePhotos: List<String>,
+    /** 근무 종료 사진의 기기 내 파일 경로(1~3장). 저장할 때 업로드 */
+    val photos: List<String>,
 )
 
-const val MAX_SCALE_PHOTOS = 3
+data class Weight(val generalKg: Double, val recycleKg: Double, val buttsG: Double)
+
+const val MAX_PHOTOS = 3
+
+// shortcut: 100L 봉투 1장 평균 무게 가정값, 이태원 시범 실측(봉투 수와 kg)이 나오면 그 평균으로
+const val KG_PER_BAG_ESTIMATE = 6.0
+
+/** 저울이 없을 때 화면에 보여 줄 추정 무게. 저장하지 않음 */
+fun estimateKgFromBags(bags: Int): Double = bags.coerceAtLeast(0) * KG_PER_BAG_ESTIMATE

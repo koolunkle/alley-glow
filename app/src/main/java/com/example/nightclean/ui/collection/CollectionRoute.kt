@@ -1,6 +1,5 @@
 package com.example.nightclean.ui.collection
 
-import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -18,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +29,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -58,8 +61,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nightclean.domain.model.BAG_SLOT_HOURS
 import com.example.nightclean.domain.model.BUTT_REWARD_WON_PER_GRAM
 import com.example.nightclean.domain.model.HOURLY_WAGE_WON
-import com.example.nightclean.domain.model.MAX_SCALE_PHOTOS
+import com.example.nightclean.domain.model.KG_PER_BAG_ESTIMATE
+import com.example.nightclean.domain.model.MAX_PHOTOS
+import com.example.nightclean.domain.model.estimateKgFromBags
 import com.example.nightclean.domain.model.estimateIncome
+import com.example.nightclean.image.decodeUpright
 import com.example.nightclean.ui.theme.NightCleanTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -80,7 +86,7 @@ fun CollectionRoute(
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
         val path = pendingPhoto ?: return@rememberLauncherForActivityResult
         pendingPhoto = null
-        if (saved) viewModel.addScalePhoto(path) else File(path).delete()
+        if (saved) viewModel.addPhoto(path) else File(path).delete()
     }
     (uiState as? CollectionUiState.Editing)?.let { editing ->
         CollectionScreen(
@@ -91,13 +97,14 @@ fun CollectionRoute(
             onRecycleKgChange = viewModel::changeRecycleKg,
             onButtsGChange = viewModel::changeButtsG,
             onNoteChange = viewModel::changeNote,
-            onTakeScalePhoto = {
+            onWeighedChange = viewModel::setWeighed,
+            onTakePhoto = {
                 // 시스템 카메라로만 촬영(갤러리 선택 불가). 파일은 캐시의 photos/에
-                val file = File(File(context.cacheDir, "photos").apply { mkdirs() }, "scale-${System.currentTimeMillis()}.jpg")
+                val file = File(File(context.cacheDir, "photos").apply { mkdirs() }, "photo-${System.currentTimeMillis()}.jpg")
                 pendingPhoto = file.path
                 takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
             },
-            onRemoveScalePhoto = viewModel::removeScalePhoto,
+            onRemovePhoto = viewModel::removePhoto,
             onSubmit = viewModel::submit,
         )
     }
@@ -112,8 +119,9 @@ fun CollectionScreen(
     onRecycleKgChange: (String) -> Unit,
     onButtsGChange: (String) -> Unit,
     onNoteChange: (String) -> Unit,
-    onTakeScalePhoto: () -> Unit,
-    onRemoveScalePhoto: (Int) -> Unit,
+    onWeighedChange: (Boolean) -> Unit,
+    onTakePhoto: () -> Unit,
+    onRemovePhoto: (Int) -> Unit,
     onSubmit: () -> Unit,
 ) {
     val form = uiState.form
@@ -137,31 +145,52 @@ fun CollectionScreen(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                WeightField("일반 (kg)", form.generalKg, enabled, onGeneralKgChange, Modifier.weight(1f))
-                WeightField("재활용 (kg)", form.recycleKg, enabled, onRecycleKgChange, Modifier.weight(1f))
-                WeightField("꽁초 (g)", form.buttsG, enabled, onButtsGChange, Modifier.weight(1f))
+            Section {
+                Text("무게", fontWeight = FontWeight.Bold)
+                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WeighChoice("저울 없음", selected = !form.weighed, enabled, Modifier.weight(1f)) { onWeighedChange(false) }
+                    WeighChoice("저울로 쟀어요", selected = form.weighed, enabled, Modifier.weight(1f)) { onWeighedChange(true) }
+                }
+                if (form.weighed) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        WeightField("일반 (kg)", form.generalKg, enabled, onGeneralKgChange, Modifier.weight(1f))
+                        WeightField("재활용 (kg)", form.recycleKg, enabled, onRecycleKgChange, Modifier.weight(1f))
+                        WeightField("꽁초 (g)", form.buttsG, enabled, onButtsGChange, Modifier.weight(1f))
+                    }
+                } else {
+                    val bags = form.bags.sum()
+                    Text(
+                        "추정 약 ${formatKg(estimateKgFromBags(bags))}kg (봉투 ${bags}장 × ${formatKg(KG_PER_BAG_ESTIMATE)}kg, 가정값)",
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "추정치는 저장하지 않아요. 수거량 보상은 저울로 잰 무게로만 계산돼요.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             Section {
-                Text("저울 사진 (필수, 최대 ${MAX_SCALE_PHOTOS}장)", fontWeight = FontWeight.Bold)
+                val what = if (form.weighed) "저울" else "채운 봉투"
+                Text("$what 사진 (필수, 최대 ${MAX_PHOTOS}장)", fontWeight = FontWeight.Bold)
                 Text(
-                    "봉투를 저울에 올리고 눈금이 보이게 찍어 주세요",
+                    if (form.weighed) "봉투를 저울에 올리고 눈금이 보이게 찍어 주세요" else "채운 봉투가 모두 보이게 찍어 주세요",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    form.scalePhotos.forEachIndexed { index, path ->
-                        PhotoThumb(path, "저울 사진 ${index + 1}", enabled) { onRemoveScalePhoto(index) }
+                    form.photos.forEachIndexed { index, path ->
+                        PhotoThumb(path, "$what 사진 ${index + 1}", enabled) { onRemovePhoto(index) }
                     }
-                    if (form.scalePhotos.size < MAX_SCALE_PHOTOS) {
+                    if (form.photos.size < MAX_PHOTOS) {
                         OutlinedButton(
-                            onClick = onTakeScalePhoto,
+                            onClick = onTakePhoto,
                             enabled = enabled,
                             shape = RoundedCornerShape(16.dp),
                             contentPadding = PaddingValues(0.dp),
                             modifier = Modifier.size(88.dp),
-                        ) { Text("촬영\n${form.scalePhotos.size}/${MAX_SCALE_PHOTOS}", textAlign = TextAlign.Center) }
+                        ) { Text("촬영\n${form.photos.size}/${MAX_PHOTOS}", textAlign = TextAlign.Center) }
                     }
                 }
             }
@@ -175,11 +204,12 @@ fun CollectionScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            val income = estimateIncome(workedMinutes, form.buttsG.toWeight(Double.MAX_VALUE) ?: 0.0)
+            val buttsG = if (form.weighed) form.buttsG.toWeight(Double.MAX_VALUE) ?: 0.0 else 0.0
+            val income = estimateIncome(workedMinutes, buttsG)
             Section {
                 Text("오늘 예상 수입 · 근무 ${workedMinutes / 60}시간 ${workedMinutes % 60}분", fontWeight = FontWeight.Bold)
                 IncomeRow("광고비 몫 (시급 ${HOURLY_WAGE_WON.won()})", income.wage)
-                IncomeRow("꽁초 보상 (제도 도입 시, 1g당 ${BUTT_REWARD_WON_PER_GRAM}원)", income.buttReward)
+                IncomeRow("꽁초 보상 (저울 사용·제도 도입 시, 1g당 ${BUTT_REWARD_WON_PER_GRAM}원)", income.buttReward)
                 HorizontalDivider()
                 IncomeRow("합계", income.total, bold = true)
             }
@@ -237,12 +267,12 @@ private fun BagStepper(label: String, count: Int, enabled: Boolean, onChange: (I
     }
 }
 
-/** 촬영한 사진 미리보기. 원본을 작게 디코딩(IO 스레드) */
+/** 촬영한 사진 미리보기. EXIF 방향을 반영해 작게 디코딩(IO 스레드) */
 @Composable
 private fun PhotoThumb(path: String, label: String, enabled: Boolean, onRemove: () -> Unit) {
     val image by produceState<ImageBitmap?>(null, path) {
         value = withContext(Dispatchers.IO) {
-            BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = 16 })?.asImageBitmap()
+            decodeUpright(path, maxSide = 264)?.asImageBitmap()
         }
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -252,6 +282,23 @@ private fun PhotoThumb(path: String, label: String, enabled: Boolean, onRemove: 
         TextButton(onClick = onRemove, enabled = enabled) { Text("삭제") }
     }
 }
+
+/** 저울 사용 여부 선택(라디오 그룹) */
+@Composable
+private fun WeighChoice(label: String, selected: Boolean, enabled: Boolean, modifier: Modifier, onSelect: () -> Unit) {
+    Row(
+        modifier
+            .height(56.dp)
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onSelect),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null, enabled = enabled)
+        Text(label, modifier = Modifier.padding(start = 4.dp))
+    }
+}
+
+/** 소수점 아래가 0이면 정수로(18.0 → 18) */
+private fun formatKg(kg: Double): String = if (kg % 1.0 == 0.0) kg.toLong().toString() else "%.1f".format(kg)
 
 @Composable
 private fun WeightField(label: String, value: String, enabled: Boolean, onChange: (String) -> Unit, modifier: Modifier) {
@@ -287,7 +334,7 @@ private fun CollectionScreenPreview() {
             ),
             workedMinutes = 240,
             onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {}, onButtsGChange = {},
-            onNoteChange = {}, onTakeScalePhoto = {}, onRemoveScalePhoto = {}, onSubmit = {},
+            onNoteChange = {}, onWeighedChange = {}, onTakePhoto = {}, onRemovePhoto = {}, onSubmit = {},
         )
     }
 }

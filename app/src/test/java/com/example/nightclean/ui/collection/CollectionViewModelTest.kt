@@ -2,6 +2,8 @@ package com.example.nightclean.ui.collection
 
 import androidx.lifecycle.SavedStateHandle
 import com.example.nightclean.domain.model.ShiftRecord
+import com.example.nightclean.domain.model.Weight
+import com.example.nightclean.domain.model.estimateKgFromBags
 import com.example.nightclean.domain.repository.ShiftRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,6 +38,7 @@ class CollectionViewModelTest {
     private val CollectionViewModel.editing get() = uiState.value as CollectionUiState.Editing
 
     private fun CollectionViewModel.fillWeights(general: String = "12.5", recycle: String = "3", butts: String = "250") {
+        setWeighed(true)
         changeGeneralKg(general)
         changeRecycleKg(recycle)
         changeButtsG(butts)
@@ -50,10 +53,40 @@ class CollectionViewModelTest {
     }
 
     @Test
-    fun `무게가 비어 있으면 저장하지 않고 안내한다`() {
+    fun `저울 없이 봉투 수와 사진만으로 저장한다`() {
+        val repo = FakeShifts()
+        val vm = viewModel(repo)
+        vm.changeBags(slot = 0, delta = 1)
+        vm.addPhoto("/cache/photos/bags.jpg")
+        vm.submit()
+        assertEquals(
+            ShiftRecord("s1", "G01", 1_000L, 5_000L, listOf(1, 0, 0, 0), weight = null, note = null, photos = listOf("/cache/photos/bags.jpg")),
+            repo.saved,
+        )
+        assertEquals(CollectionUiState.Submitted, vm.uiState.value)
+    }
+
+    @Test
+    fun `저울로 쟀으면 무게를 함께 저장한다`() {
+        val repo = FakeShifts()
+        val vm = viewModel(repo)
+        vm.changeBags(slot = 1, delta = 1)
+        vm.fillWeights(general = "12,5")
+        vm.changeNote("  ")
+        vm.addPhoto("/cache/photos/a.jpg")
+        vm.submit()
+        assertEquals(
+            ShiftRecord("s1", "G01", 1_000L, 5_000L, listOf(0, 1, 0, 0), Weight(12.5, 3.0, 250.0), note = null, photos = listOf("/cache/photos/a.jpg")),
+            repo.saved,
+        )
+    }
+
+    @Test
+    fun `저울을 골랐는데 무게가 비어 있으면 저장하지 않고 안내한다`() {
         val repo = FakeShifts()
         val vm = viewModel(repo)
         vm.fillWeights(general = "")
+        vm.addPhoto("/cache/photos/a.jpg")
         vm.submit()
         assertNull(repo.saved)
         assertEquals("무게를 숫자로 입력해 주세요. 없으면 0을 적어 주세요.", vm.editing.error)
@@ -63,6 +96,7 @@ class CollectionViewModelTest {
     fun `음수나 상한을 넘는 무게는 받지 않는다`() {
         val repo = FakeShifts()
         val vm = viewModel(repo)
+        vm.addPhoto("/cache/photos/a.jpg")
         vm.fillWeights(recycle = "-1")
         vm.submit()
         vm.fillWeights(general = "501")
@@ -71,48 +105,40 @@ class CollectionViewModelTest {
     }
 
     @Test
-    fun `저장에 성공하면 입력값으로 기록하고 Submitted가 된다`() {
+    fun `사진이 없으면 저울 사용 여부에 맞춰 안내한다`() {
         val repo = FakeShifts()
         val vm = viewModel(repo)
-        vm.changeBags(slot = 1, delta = 1)
-        vm.fillWeights(general = "12,5")
-        vm.changeNote("  ")
-        vm.addScalePhoto("/cache/photos/a.jpg")
         vm.submit()
-        assertEquals(
-            ShiftRecord("s1", "G01", 1_000L, 5_000L, listOf(0, 1, 0, 0), 12.5, 3.0, 250.0, note = null, scalePhotos = listOf("/cache/photos/a.jpg")),
-            repo.saved,
-        )
-        assertEquals(CollectionUiState.Submitted, vm.uiState.value)
+        assertEquals("채운 봉투 사진을 1장 이상 찍어 주세요.", vm.editing.error)
+        vm.fillWeights()
+        vm.submit()
+        assertEquals("저울 사진을 1장 이상 찍어 주세요.", vm.editing.error)
+        assertNull(repo.saved)
+    }
+
+    @Test
+    fun `사진은 3장까지 담기고 지울 수 있다`() {
+        val vm = viewModel(FakeShifts())
+        listOf("a", "b", "c", "d").forEach(vm::addPhoto)
+        assertEquals(listOf("a", "b", "c"), vm.editing.form.photos)
+        vm.removePhoto(1)
+        assertEquals(listOf("a", "c"), vm.editing.form.photos)
     }
 
     @Test
     fun `저장에 실패하면 입력값을 유지하고 안내한다`() {
         val vm = viewModel(FakeShifts(Result.failure(IllegalStateException())))
         vm.fillWeights()
-        vm.addScalePhoto("/cache/photos/a.jpg")
+        vm.addPhoto("/cache/photos/a.jpg")
         vm.submit()
         assertEquals("12.5", vm.editing.form.generalKg)
-        assertEquals(listOf("/cache/photos/a.jpg"), vm.editing.form.scalePhotos)
+        assertEquals(listOf("/cache/photos/a.jpg"), vm.editing.form.photos)
         assertEquals("저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요. 사진은 그대로 남아 있어요.", vm.editing.error)
     }
 
     @Test
-    fun `저울 사진이 없으면 저장하지 않고 안내한다`() {
-        val repo = FakeShifts()
-        val vm = viewModel(repo)
-        vm.fillWeights()
-        vm.submit()
-        assertNull(repo.saved)
-        assertEquals("저울 사진을 1장 이상 찍어 주세요.", vm.editing.error)
-    }
-
-    @Test
-    fun `저울 사진은 3장까지 담기고 지울 수 있다`() {
-        val vm = viewModel(FakeShifts())
-        listOf("a", "b", "c", "d").forEach(vm::addScalePhoto)
-        assertEquals(listOf("a", "b", "c"), vm.editing.form.scalePhotos)
-        vm.removeScalePhoto(1)
-        assertEquals(listOf("a", "c"), vm.editing.form.scalePhotos)
+    fun `추정 무게는 봉투 수에 가정값을 곱한다`() {
+        assertEquals(18.0, estimateKgFromBags(3), 0.0)
+        assertEquals(0.0, estimateKgFromBags(-1), 0.0)
     }
 }

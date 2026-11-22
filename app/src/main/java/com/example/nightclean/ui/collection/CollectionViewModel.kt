@@ -3,8 +3,9 @@ package com.example.nightclean.ui.collection
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.nightclean.domain.model.MAX_SCALE_PHOTOS
+import com.example.nightclean.domain.model.MAX_PHOTOS
 import com.example.nightclean.domain.model.ShiftRecord
+import com.example.nightclean.domain.model.Weight
 import com.example.nightclean.domain.repository.ShiftRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,25 +41,33 @@ class CollectionViewModel @Inject constructor(
     fun changeButtsG(value: String) = edit { it.copy(buttsG = value) }
     fun changeNote(value: String) = edit { it.copy(note = value.take(MAX_NOTE)) }
 
-    fun addScalePhoto(path: String) = edit { form ->
-        if (form.scalePhotos.size < MAX_SCALE_PHOTOS) form.copy(scalePhotos = form.scalePhotos + path) else form
+    fun setWeighed(weighed: Boolean) = edit { it.copy(weighed = weighed) }
+
+    fun addPhoto(path: String) = edit { form ->
+        if (form.photos.size < MAX_PHOTOS) form.copy(photos = form.photos + path) else form
     }
 
-    fun removeScalePhoto(index: Int) = edit { it.copy(scalePhotos = it.scalePhotos.filterIndexed { i, _ -> i != index }) }
+    fun removePhoto(index: Int) = edit { it.copy(photos = it.photos.filterIndexed { i, _ -> i != index }) }
 
     fun submit() {
         val state = _uiState.value as? CollectionUiState.Editing ?: return
         if (state.isSubmitting) return
         val form = state.form
-        val generalKg = form.generalKg.toWeight(MAX_KG)
-        val recycleKg = form.recycleKg.toWeight(MAX_KG)
-        val buttsG = form.buttsG.toWeight(MAX_G)
-        if (generalKg == null || recycleKg == null || buttsG == null) {
-            _uiState.value = state.copy(error = "무게를 숫자로 입력해 주세요. 없으면 0을 적어 주세요.")
-            return
+        val weight = if (form.weighed) {
+            val generalKg = form.generalKg.toWeight(MAX_KG)
+            val recycleKg = form.recycleKg.toWeight(MAX_KG)
+            val buttsG = form.buttsG.toWeight(MAX_G)
+            if (generalKg == null || recycleKg == null || buttsG == null) {
+                _uiState.value = state.copy(error = "무게를 숫자로 입력해 주세요. 없으면 0을 적어 주세요.")
+                return
+            }
+            Weight(generalKg, recycleKg, buttsG)
+        } else {
+            null
         }
-        if (form.scalePhotos.isEmpty()) {
-            _uiState.value = state.copy(error = "저울 사진을 1장 이상 찍어 주세요.")
+        if (form.photos.isEmpty()) {
+            val what = if (form.weighed) "저울" else "채운 봉투"
+            _uiState.value = state.copy(error = "$what 사진을 1장 이상 찍어 주세요.")
             return
         }
         val record = ShiftRecord(
@@ -67,11 +76,9 @@ class CollectionViewModel @Inject constructor(
             startedAt = startedAt,
             endedAt = endedAt,
             bagsByHour = form.bags,
-            generalKg = generalKg,
-            recycleKg = recycleKg,
-            buttsG = buttsG,
+            weight = weight,
             note = form.note.trim().ifEmpty { null },
-            scalePhotos = form.scalePhotos,
+            photos = form.photos,
         )
         _uiState.value = state.copy(isSubmitting = true, error = null)
         viewModelScope.launch {

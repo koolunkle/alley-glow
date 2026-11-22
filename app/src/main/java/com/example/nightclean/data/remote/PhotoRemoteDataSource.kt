@@ -1,10 +1,8 @@
 package com.example.nightclean.data.remote
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.ExifInterface
 import com.example.nightclean.BuildConfig
+import com.example.nightclean.image.decodeUpright
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.ktor.client.HttpClient
@@ -42,27 +40,8 @@ class PhotoRemoteDataSource @Inject constructor(
     }
 }
 
-/** 긴 변 maxSide 이하로 줄이고 EXIF 회전을 반영한 JPEG. 원본 12MP 사진을 수백 KB로 */
+/** 똑바로 세워 긴 변 maxSide 이하로 줄인 JPEG. 원본 12MP 사진을 수백 KB로 */
 internal fun compressJpeg(file: File, maxSide: Int = 1600, quality: Int = 80): ByteArray {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(file.path, bounds)
-    var sample = 1
-    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxSide) sample *= 2
-    val decoded = checkNotNull(BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sample })) {
-        "사진을 읽지 못함"
-    }
-    val degrees = when (ExifInterface(file.path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
-        ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-        ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-        ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-        else -> 0f
-    }
-    val longSide = maxOf(decoded.width, decoded.height)
-    val scale = if (longSide > maxSide) maxSide.toFloat() / longSide else 1f
-    val matrix = Matrix().apply {
-        postScale(scale, scale)
-        postRotate(degrees)
-    }
-    val bitmap = if (scale == 1f && degrees == 0f) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+    val bitmap = checkNotNull(decodeUpright(file.path, maxSide)) { "사진을 읽지 못함" }
     return ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }.toByteArray()
 }

@@ -22,12 +22,14 @@ data class ShiftDto(
 data class CollectionDto(
     @SerialName("shift_id") val shiftId: String,
     @SerialName("bags_by_hour") val bagsByHour: List<Int>,
-    @SerialName("general_kg") val generalKg: Double,
-    @SerialName("recycle_kg") val recycleKg: Double,
-    @SerialName("butts_g") val buttsG: Double,
+    /** false면 무게 세 칸은 null(DB check 제약) */
+    val weighed: Boolean,
+    @SerialName("general_kg") val generalKg: Double?,
+    @SerialName("recycle_kg") val recycleKg: Double?,
+    @SerialName("butts_g") val buttsG: Double?,
     val note: String?,
     /** Storage 경로(버킷 제외) */
-    @SerialName("scale_photo_paths") val scalePhotoPaths: List<String>,
+    @SerialName("photo_paths") val photoPaths: List<String>,
 )
 
 fun ShiftRecord.toShiftDto() = ShiftDto(
@@ -37,14 +39,15 @@ fun ShiftRecord.toShiftDto() = ShiftDto(
     endedAt = endedAt.toIsoUtc(),
 )
 
-fun ShiftRecord.toCollectionDto(scalePhotoPaths: List<String>) = CollectionDto(
+fun ShiftRecord.toCollectionDto(photoPaths: List<String>) = CollectionDto(
     shiftId = shiftId,
     bagsByHour = bagsByHour,
-    generalKg = generalKg,
-    recycleKg = recycleKg,
-    buttsG = buttsG,
+    weighed = weight != null,
+    generalKg = weight?.generalKg,
+    recycleKg = weight?.recycleKg,
+    buttsG = weight?.buttsG,
     note = note,
-    scalePhotoPaths = scalePhotoPaths,
+    photoPaths = photoPaths,
 )
 
 /** minSdk 24라 java.time 대신 SimpleDateFormat */

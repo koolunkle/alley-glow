@@ -94,7 +94,7 @@ private fun Report(uiState: ShopReportUiState.Success, onAddGuest: () -> Unit) {
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Metric("청소한 밤", "${report.nights}회", "가게 앞 체크인 기준", Modifier.weight(1f))
-        Metric("치운 쓰레기", "${formatKg(report.collectedKg)}kg", "들른 근무의 전체 수거량", Modifier.weight(1f))
+        Metric("치운 쓰레기", "${formatKg(report.collectedKg)}kg", "들른 근무 중 저울로 잰 양", Modifier.weight(1f))
     }
 
     Row(
