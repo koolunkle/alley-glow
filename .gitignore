@@ -15,3 +15,6 @@
 local.properties
 .kotlin
 CLAUDE.local.md
+
+# QR 랜딩 웹 접속 정보(배포는 GitHub Secrets)
+web/config.js

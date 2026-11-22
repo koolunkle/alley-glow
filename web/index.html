@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>이 골목은 지금 청소 중</title>
+<style>
+  :root {
+    --navy: #0F1B2D; --surface: #182840; --line: #2A3D5C;
+    --lime: #C6F432; --ink: #F2F5F9; --muted: #A9B6C8; --warn: #FFB547;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--navy); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    line-height: 1.5;
+  }
+  .banner { background: var(--lime); color: var(--navy); padding: 14px 16px; font-weight: 900; text-align: center; }
+  main { max-width: 480px; margin: 0 auto; padding: 24px 16px 32px; display: flex; flex-direction: column; gap: 16px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 0; }
+  h1 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+  .sub { color: var(--muted); font-size: 15px; margin: 6px 0 0; }
+  .benefit { border: 2px solid var(--lime); border-radius: 20px; padding: 14px 16px; }
+  .benefit .label { color: var(--lime); font-size: 13px; font-weight: 700; }
+  .benefit p { margin: 4px 0 0; font-size: 16px; font-weight: 700; }
+  .button {
+    display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 28px;
+    background: var(--lime); color: var(--navy); font-size: 16px; font-weight: 900; text-decoration: none;
+  }
+  fieldset { border: 0; padding: 0; margin: 0; }
+  legend { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .scores { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .scores button {
+    min-height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+    color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .scores button:focus-visible, .button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .scores button:disabled { opacity: 0.5; cursor: default; }
+  .scale { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .note { font-size: 14px; color: var(--muted); }
+  .warn { color: var(--warn); }
+  footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 8px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="banner">이 골목은 지금 청소 중</div>
+<main>
+  <p class="lead">클린 워커가 이 거리를 치우고 있어요. 오늘 밤 청소는 이 가게가 함께합니다.</p>
+
+  <p id="status" class="note" role="status" aria-live="polite">가게 정보를 불러오고 있어요…</p>
+
+  <section id="shop" hidden>
+    <h1 id="name"></h1>
+    <p id="intro" class="sub" hidden></p>
+    <p id="menu" class="sub" hidden></p>
+  </section>
+
+  <section id="benefit" class="benefit" hidden>
+    <div class="label">오늘의 혜택</div>
+    <p>“클린 보고 왔어요”라고 말하면 <span id="benefit-text"></span></p>
+  </section>
+
+  <a id="directions" class="button" hidden target="_blank" rel="noopener">길찾기 (카카오맵)</a>
+
+  <form id="rate" hidden>
+    <fieldset>
+      <legend>이 거리, 평소보다 깨끗한가요?</legend>
+      <div class="scores">
+        <button type="submit" value="1">1</button>
+        <button type="submit" value="2">2</button>
+        <button type="submit" value="3">3</button>
+        <button type="submit" value="4">4</button>
+        <button type="submit" value="5">5</button>
+      </div>
+      <div class="scale" aria-hidden="true"><span>더러워요</span><span>아주 깨끗해요</span></div>
+    </fieldset>
+  </form>
+  <p id="rated" class="note" role="status" aria-live="polite" hidden></p>
+
+  <footer>야간 클린 워커 · 2026 서울 야간경제 활성화 해커톤 참가작</footer>
+</main>
+
+<!-- SUPABASE_URL, SUPABASE_KEY(publishable). git에 올리지 않고 배포 때 GitHub Secrets로 만든다 -->
+<script src="config.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const status = $('status');
+
+  /** Supabase 함수 호출. 익명은 테이블에 직접 접근하지 못하고 qr_visit·qr_rate만 쓴다 */
+  async function rpc(name, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  }
+
+  // 화면에 넣는 값은 모두 textContent로(가게 정보에 HTML이 섞여도 실행되지 않게)
+  function show(id, text) {
+    const el = $(id);
+    if (!text) return;
+    el.textContent = text;
+    el.hidden = false;
+  }
+
+  async function load() {
+    const code = new URLSearchParams(location.search).get('s');
+    if (!code || typeof SUPABASE_URL === 'undefined') {
+      status.textContent = '가게 QR을 다시 스캔해 주세요.';
+      status.classList.add('warn');
+      return;
+    }
+    let shop;
+    try {
+      shop = await rpc('qr_visit', { p_code: code });
+    } catch (e) {
+      status.textContent = '정보를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.';
+      status.classList.add('warn');
+      return;
+    }
+    if (!shop) {
+      status.textContent = '등록되지 않은 가게 QR이에요.';
+      status.classList.add('warn');
+      return;
+    }
+    status.hidden = true;
+    document.title = `${shop.name} · 이 골목은 지금 청소 중`;
+    show('name', shop.name);
+    $('shop').hidden = false;
+    show('intro', shop.intro);
+    show('menu', shop.menu);
+    if (shop.benefit) {
+      $('benefit-text').textContent = shop.benefit;
+      $('benefit').hidden = false;
+    }
+    const directions = $('directions');
+    directions.href = `https://map.kakao.com/link/to/${encodeURIComponent(shop.name)},${shop.lat},${shop.lng}`;
+    directions.hidden = false;
+
+    const form = $('rate');
+    form.hidden = false;
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const score = Number(event.submitter?.value);
+      form.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+      let ok = false;
+      try {
+        ok = await rpc('qr_rate', { p_scan_id: shop.scan_id, p_score: score });
+      } catch (e) { /* 아래 안내 */ }
+      const rated = $('rated');
+      rated.textContent = ok ? '알려 주셔서 고마워요.' : '평가를 저장하지 못했어요.';
+      rated.hidden = false;
+      form.hidden = ok;
+      if (!ok) form.querySelectorAll('button').forEach((b) => { b.disabled = false; });
+    });
+  }
+
+  load();
+</script>
+</body>
+</html>
