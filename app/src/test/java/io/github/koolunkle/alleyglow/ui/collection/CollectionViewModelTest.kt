@@ -11,7 +11,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -101,6 +103,7 @@ class CollectionViewModelTest {
         val vm = viewModel(repo)
         vm.fillWeights(general = "", recycle = "3")
         vm.addPhoto("/cache/photos/a.jpg")
+        vm.changeBags(slot = 0, delta = 1)
         vm.submit()
         assertEquals(Weight(0.0, 3.0, 0.0), repo.saved?.weight)
     }
@@ -141,6 +144,29 @@ class CollectionViewModelTest {
     }
 
     @Test
+    fun `봉투가 0장이면 저장하지 않고 한 번 더 묻는다`() {
+        val repo = FakeShifts()
+        val vm = viewModel(repo)
+        vm.addPhoto("/cache/photos/a.jpg")
+        vm.submit()
+        assertNull(repo.saved)
+        assertTrue(vm.editing.confirmZeroBags)
+        vm.dismissZeroBags()
+        assertFalse(vm.editing.confirmZeroBags)
+        assertNull(repo.saved)
+    }
+
+    @Test
+    fun `봉투 0장 확인에서 그대로 저장을 고르면 저장한다`() {
+        val repo = FakeShifts()
+        val vm = viewModel(repo)
+        vm.addPhoto("/cache/photos/a.jpg")
+        vm.submit()
+        vm.submit(zeroBagsConfirmed = true)
+        assertEquals(listOf(0, 0, 0, 0), repo.saved?.bagsByHour)
+    }
+
+    @Test
     fun `사진은 3장까지 담기고 지울 수 있다`() {
         val vm = viewModel(FakeShifts())
         listOf("a", "b", "c", "d").forEach(vm::addPhoto)
@@ -154,6 +180,7 @@ class CollectionViewModelTest {
         val vm = viewModel(FakeShifts(Result.failure(IllegalStateException())))
         vm.fillWeights()
         vm.addPhoto("/cache/photos/a.jpg")
+        vm.changeBags(slot = 0, delta = 1)
         vm.submit()
         assertEquals("12.5", vm.editing.form.generalKg)
         assertEquals(listOf("/cache/photos/a.jpg"), vm.editing.form.photos)
@@ -174,6 +201,7 @@ class CollectionViewModelTest {
         listOf("a1", "a2", "a3").forEach(vm::addAfterPhoto)
         vm.removeAfterPhoto(0)
         vm.addPhoto("p1")
+        vm.changeBags(slot = 0, delta = 1)
         vm.submit()
         assertEquals(listOf("b1"), repo.saved?.beforePhotos)
         assertEquals(listOf("a2"), repo.saved?.afterPhotos)

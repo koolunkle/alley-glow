@@ -64,7 +64,8 @@ class CollectionViewModel @Inject constructor(
 
     fun removeAfterPhoto(index: Int) = edit { it.copy(afterPhotos = it.afterPhotos.withoutIndex(index)) }
 
-    fun submit() {
+    /** zeroBagsConfirmed: 봉투 0장 확인에서 그대로 저장을 고름 */
+    fun submit(zeroBagsConfirmed: Boolean = false) {
         val state = _uiState.value as? CollectionUiState.Editing ?: return
         if (state.isSubmitting) return
         val form = state.form
@@ -84,6 +85,11 @@ class CollectionViewModel @Inject constructor(
             _uiState.value = state.copy(error = CollectionError.PHOTO)
             return
         }
+        // +1을 잊은 근무가 0장으로 저장되지 않게 다른 검증을 통과한 뒤 한 번 더 확인
+        if (form.bags.sum() == 0 && !zeroBagsConfirmed) {
+            _uiState.value = state.copy(confirmZeroBags = true, error = null)
+            return
+        }
         val record = ShiftRecord(
             shiftId = shiftId,
             zoneId = zoneId,
@@ -96,13 +102,18 @@ class CollectionViewModel @Inject constructor(
             beforePhotos = beforePhotos,
             afterPhotos = form.afterPhotos,
         )
-        _uiState.value = state.copy(isSubmitting = true, error = null)
+        _uiState.value = state.copy(isSubmitting = true, error = null, confirmZeroBags = false)
         viewModelScope.launch {
             _uiState.value = repository.finishShift(record).fold(
                 onSuccess = { CollectionUiState.Submitted },
-                onFailure = { state.copy(error = CollectionError.SAVE) },
+                onFailure = { state.copy(error = CollectionError.SAVE, confirmZeroBags = false) },
             )
         }
+    }
+
+    fun dismissZeroBags() {
+        val state = _uiState.value as? CollectionUiState.Editing ?: return
+        _uiState.value = state.copy(confirmZeroBags = false)
     }
 
     private fun edit(change: (CollectionForm) -> CollectionForm) {

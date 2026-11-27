@@ -127,6 +127,10 @@
     <string name="collection_note">특이사항</string>
     <string name="collection_note_hint">민원, 위험 상황, 혼잡 등</string>
     <string name="collection_submit">근무 종료하기</string>
+    <string name="collection_zero_bags_title">채운 봉투 0장</string>
+    <string name="collection_zero_bags_body">봉투를 채우지 않았다면 그대로 저장하고, 기록을 잊었다면 봉투 수를 고쳐 주세요.</string>
+    <string name="collection_zero_bags_confirm">그대로 저장</string>
+    <string name="collection_zero_bags_edit">봉투 수 고치기</string>
     <string name="collection_error_weight">무게는 숫자로 적어 주세요.</string>
     <string name="collection_error_photo">채운 봉투 사진을 1장 이상 찍어 주세요.</string>
     <string name="collection_error_save">저장하지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요. 입력과 사진은 그대로 남아 있어요.</string>

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,7 +80,9 @@ fun CollectionRoute(
             onRemovePhoto = viewModel::removePhoto,
             onAddAfterPhoto = viewModel::addAfterPhoto,
             onRemoveAfterPhoto = viewModel::removeAfterPhoto,
-            onSubmit = viewModel::submit,
+            onSubmit = { viewModel.submit() },
+            onConfirmZeroBags = { viewModel.submit(zeroBagsConfirmed = true) },
+            onDismissZeroBags = viewModel::dismissZeroBags,
         )
     }
 }
@@ -99,9 +103,20 @@ fun CollectionScreen(
     onAddAfterPhoto: (String) -> Unit,
     onRemoveAfterPhoto: (Int) -> Unit,
     onSubmit: () -> Unit,
+    onConfirmZeroBags: () -> Unit,
+    onDismissZeroBags: () -> Unit,
 ) {
     val form = uiState.form
     val enabled = !uiState.isSubmitting
+    if (uiState.confirmZeroBags) {
+        AlertDialog(
+            onDismissRequest = onDismissZeroBags,
+            title = { Text(stringResource(R.string.collection_zero_bags_title)) },
+            text = { Text(stringResource(R.string.collection_zero_bags_body)) },
+            confirmButton = { TextButton(onClick = onConfirmZeroBags) { Text(stringResource(R.string.collection_zero_bags_confirm)) } },
+            dismissButton = { TextButton(onClick = onDismissZeroBags) { Text(stringResource(R.string.collection_zero_bags_edit)) } },
+        )
+    }
     Scaffold(
         topBar = { SubTopBar(stringResource(R.string.collection_title), onBack) },
         bottomBar = {
@@ -290,6 +305,7 @@ private fun CollectionScreenPreview() {
             onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {},
             onNoteChange = {}, onAddPhoto = {}, onRemovePhoto = {},
             onAddAfterPhoto = {}, onRemoveAfterPhoto = {}, onSubmit = {},
+            onConfirmZeroBags = {}, onDismissZeroBags = {},
         )
     }
 }

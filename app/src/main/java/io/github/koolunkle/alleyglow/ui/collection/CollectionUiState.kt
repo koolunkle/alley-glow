@@ -23,6 +23,8 @@ sealed interface CollectionUiState {
         val isSubmitting: Boolean = false,
         /** 문구는 화면이 리소스로 보임 */
         val error: CollectionError? = null,
+        /** 봉투 0장으로 저장하려 할 때 한 번 더 묻는 중 */
+        val confirmZeroBags: Boolean = false,
     ) : CollectionUiState
 
     data object Submitted : CollectionUiState
