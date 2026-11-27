@@ -23,7 +23,7 @@
 - 무료 플랜이라 7일간 요청이 없으면 프로젝트가 일시 정지된다(앱·랜딩 웹 모두 멈춤). `.github/workflows/keep-alive.yml`이 사흘마다 `zones` 1행을 읽어 막는다(Secrets는 Pages 배포와 같은 것). 공개 저장소에 60일간 커밋이 없으면 GitHub가 이 예약 실행을 끄므로 Actions 탭에서 다시 켠다. 이미 멈췄으면 대시보드에서 Restore.
 
 ## 앱 구조와 규칙
-- Kotlin, Compose, AGP 9.5.2, minSdk 24 / target·compileSdk 37.
+- Kotlin, Compose, AGP 9.5.3, minSdk 24 / target·compileSdk 37.
 - 라이브러리: Hilt + KSP, Play 서비스(code-scanner 16.1.0, location 21.4.0, kotlinx-coroutines-play-services), navigation-compose(type-safe `AppRoute`), Ktor Client 3.5.2(OkHttp), kotlinx-serialization, supabase-kt `auth-kt` 3.6.0(3.7 이상은 Kotlin 2.4 필요).
 - 계층: `data/remote`(DTO는 `@SerialName` snake_case, DataSource) → `data/repository`(Kotlin `Result`, `CancellationException`은 다시 던짐) → `domain`(model, repository 인터페이스). UseCase는 두지 않는다.
 - 화면: `XxxRoute`(상태 보유, `hiltViewModel()`) + `XxxScreen`(상태 없음, Preview). 상태는 `StateFlow<XxxUiState>`(sealed interface).
