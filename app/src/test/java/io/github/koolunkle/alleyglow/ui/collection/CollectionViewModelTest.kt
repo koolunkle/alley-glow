@@ -42,6 +42,23 @@ class CollectionViewModelTest {
     }
 
     @Test
+    fun `프로세스가 재생성돼도 입력 중인 폼이 남는다`() {
+        val handle = SavedStateHandle(mapOf("shiftId" to "s1", "zoneId" to "G01", "startedAt" to 1_000L, "bagsByHour" to listOf(1, 0, 0, 0)))
+        CollectionViewModel(FakeShifts(), handle).apply {
+            changeBags(slot = 1, delta = 1)
+            changeGeneralKg("2.5")
+            changeNote("민원 1건")
+            addPhoto("/cache/photos/bags.jpg")
+            addAfterPhoto("/cache/photos/after.jpg")
+        }
+        val restored = CollectionViewModel(FakeShifts(), handle).editing.form
+        assertEquals(
+            CollectionForm(listOf(1, 1, 0, 0), "2.5", "", "민원 1건", listOf("/cache/photos/bags.jpg"), listOf("/cache/photos/after.jpg")),
+            restored,
+        )
+    }
+
+    @Test
     fun `봉투 수는 0 아래로 내려가지 않는다`() {
         val vm = viewModel(FakeShifts())
         vm.changeBags(slot = 0, delta = -1)

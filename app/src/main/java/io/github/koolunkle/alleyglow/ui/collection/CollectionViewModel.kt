@@ -10,6 +10,8 @@ import io.github.koolunkle.alleyglow.domain.model.ShiftRecord
 import io.github.koolunkle.alleyglow.domain.model.Weight
 import io.github.koolunkle.alleyglow.domain.repository.ShiftRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.koolunkle.alleyglow.ui.common.plusUpTo
+import io.github.koolunkle.alleyglow.ui.common.withoutIndex
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CollectionViewModel @Inject constructor(
     private val repository: ShiftRepository,
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     // AppRoute.Collection 인자
@@ -34,11 +36,13 @@ class CollectionViewModel @Inject constructor(
     val endedAt: Long = savedStateHandle.get<Long>(KEY_ENDED_AT)
         ?: System.currentTimeMillis().also { savedStateHandle[KEY_ENDED_AT] = it }
 
-    // 근무 중에 센 봉투 수가 있으면 초기값으로(여기서 고칠 수 있음)
+    // 카메라를 띄운 사이 프로세스가 재생성돼도 입력이 남도록 저장 상태에서 먼저 복원.
+    // 처음 들어오면 근무 중에 센 봉투 수를 초기값으로(여기서 고칠 수 있음)
     private val _uiState = MutableStateFlow<CollectionUiState>(
         CollectionUiState.Editing(
-            form = savedStateHandle.intList("bagsByHour").takeIf { it.size == BAG_SLOT_HOURS.size }
-                ?.let { CollectionForm(bags = it) }
+            form = savedStateHandle.restoreForm()
+                ?: savedStateHandle.intList("bagsByHour").takeIf { it.size == BAG_SLOT_HOURS.size }
+                    ?.let { CollectionForm(bags = it) }
                 ?: CollectionForm(),
         ),
     )
@@ -52,18 +56,13 @@ class CollectionViewModel @Inject constructor(
     fun changeRecycleKg(value: String) = edit { it.copy(recycleKg = value) }
     fun changeNote(value: String) = edit { it.copy(note = value.take(MAX_NOTE)) }
 
+    fun addPhoto(path: String) = edit { it.copy(photos = it.photos.plusUpTo(path, MAX_PHOTOS)) }
 
-    fun addPhoto(path: String) = edit { form ->
-        if (form.photos.size < MAX_PHOTOS) form.copy(photos = form.photos + path) else form
-    }
+    fun removePhoto(index: Int) = edit { it.copy(photos = it.photos.withoutIndex(index)) }
 
-    fun removePhoto(index: Int) = edit { it.copy(photos = it.photos.filterIndexed { i, _ -> i != index }) }
+    fun addAfterPhoto(path: String) = edit { it.copy(afterPhotos = it.afterPhotos.plusUpTo(path, MAX_BEFORE_AFTER_PHOTOS)) }
 
-    fun addAfterPhoto(path: String) = edit { form ->
-        if (form.afterPhotos.size < MAX_BEFORE_AFTER_PHOTOS) form.copy(afterPhotos = form.afterPhotos + path) else form
-    }
-
-    fun removeAfterPhoto(index: Int) = edit { it.copy(afterPhotos = it.afterPhotos.filterIndexed { i, _ -> i != index }) }
+    fun removeAfterPhoto(index: Int) = edit { it.copy(afterPhotos = it.afterPhotos.withoutIndex(index)) }
 
     fun submit() {
         val state = _uiState.value as? CollectionUiState.Editing ?: return
@@ -108,7 +107,10 @@ class CollectionViewModel @Inject constructor(
 
     private fun edit(change: (CollectionForm) -> CollectionForm) {
         val state = _uiState.value as? CollectionUiState.Editing ?: return
-        if (!state.isSubmitting) _uiState.value = state.copy(form = change(state.form), error = null)
+        if (state.isSubmitting) return
+        val form = change(state.form)
+        savedStateHandle.saveForm(form)
+        _uiState.value = state.copy(form = form, error = null)
     }
 
     private companion object {
@@ -125,6 +127,28 @@ private fun SavedStateHandle.stringList(key: String): List<String> = when (val v
     is Array<*> -> value.filterIsInstance<String>()
     is List<*> -> value.filterIsInstance<String>()
     else -> emptyList()
+}
+
+// 폼 저장 키는 내비게이션 인자(bagsByHour 등)와 겹치지 않게 접두
+private fun SavedStateHandle.saveForm(form: CollectionForm) {
+    this["form_bags"] = ArrayList(form.bags)
+    this["form_general_kg"] = form.generalKg
+    this["form_recycle_kg"] = form.recycleKg
+    this["form_note"] = form.note
+    this["form_photos"] = ArrayList(form.photos)
+    this["form_after_photos"] = ArrayList(form.afterPhotos)
+}
+
+private fun SavedStateHandle.restoreForm(): CollectionForm? {
+    val bags = intList("form_bags").takeIf { it.size == BAG_SLOT_HOURS.size } ?: return null
+    return CollectionForm(
+        bags = bags,
+        generalKg = get<String>("form_general_kg").orEmpty(),
+        recycleKg = get<String>("form_recycle_kg").orEmpty(),
+        note = get<String>("form_note").orEmpty(),
+        photos = stringList("form_photos"),
+        afterPhotos = stringList("form_after_photos"),
+    )
 }
 
 private fun SavedStateHandle.intList(key: String): List<Int> = when (val value = get<Any>(key)) {
