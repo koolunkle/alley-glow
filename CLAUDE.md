@@ -25,7 +25,7 @@
 ## 앱 구조와 규칙
 - Kotlin, Compose, AGP 9.5.3, minSdk 24 / target·compileSdk 37.
 - 라이브러리: Hilt + KSP, Play 서비스(code-scanner 16.1.0, location 21.4.0, kotlinx-coroutines-play-services), navigation-compose(type-safe `AppRoute`), Ktor Client 3.5.2(OkHttp), kotlinx-serialization, supabase-kt `auth-kt` 3.6.0(3.7 이상은 Kotlin 2.4 필요).
-- 계층: `data/remote`(DTO는 `@SerialName` snake_case, DataSource) → `data/repository`(Kotlin `Result`, `CancellationException`은 다시 던짐) → `domain`(model, repository 인터페이스). UseCase는 두지 않는다.
+- 계층: `data/remote`(DTO는 `@SerialName` snake_case, DataSource) → `data/repository`(Kotlin `Result`, 공통 `result { }`로 감싸고 `CancellationException`은 다시 던짐) → `domain`(model, repository 인터페이스). UseCase는 두지 않는다.
 - 화면: `XxxRoute`(상태 보유, `hiltViewModel()`) + `XxxScreen`(상태 없음, Preview). 상태는 `StateFlow<XxxUiState>`(sealed interface).
 - `HttpClient`는 `di/NetworkModule`의 싱글턴 하나를 쓴다(baseUrl `/rest/v1/`, apikey 헤더, `expectSuccess`). 로그인 중이면 사용자 토큰을 Bearer로 붙인다. 인증(세션 저장·갱신)만 `SupabaseClient`가 맡는다.
 - 테마는 다크 하나(`AlleyGlowTheme`, 다이내믹 컬러 없음). 상태바와 내비바는 `SystemBarStyle.dark`로 둔다.
@@ -33,7 +33,7 @@
 - 역할 첫 화면(지도, 상인 리포트)은 `ui/common/AppTopBar`(서비스 이름 + 계정 아이콘 → 이름·역할·로그아웃 메뉴)를 쓴다.
 - 연두(primary)는 "지금 누를 것"(주 버튼, +1)과 작은 라벨에만 쓴다. 정보 카드에 연두 테두리·연두 바탕을 쓰지 않는다. 숫자와 그 숫자를 바꾸는 버튼은 한 카드에 둔다. 아이콘은 `res/drawable/ic_*.xml`(Material Icons 경로, 라이브러리 없이).
 - 화면 문구는 `res/values/strings.xml`(`stringResource`, 서비스는 `getString`)에 둔다. 제목·버튼은 짧은 명사형, 안내는 한 문장. ViewModel은 문구 대신 오류 종류(enum·object)를 넘기고 화면이 리소스로 바꾼다. 단위가 붙는 숫자 포맷(`formatWon`·`formatDistance` 등, 테스트 있음)만 코드에 둔다.
-- 사용자에게 보이는 오류 문구는 한글 고정 문구를 쓴다. 예외 원문은 보여주지 않는다. 화면 안 오류·실패 안내는 `ui/common/InlineNotice`(본문색 글자 + 주황 경고 아이콘, 남색 줄)로 보인다.
+- 사용자에게 보이는 오류 문구는 한글 고정 문구를 쓴다. 예외 원문은 보여주지 않는다. 화면 안 오류·실패 안내는 `ui/common/InlineNotice`(본문색 글자 + 주황 경고 아이콘, 남색 줄)로 보인다. 불러오기 실패는 다시 시도 버튼을 붙인 `LoadFailedNotice`.
 - 과한 설계를 피한다. 임시 처리에는 `// shortcut: <한계>, <바꿀 시점>` 주석을 단다.
 
 ## 현재 상태 (MVP 화면 시안 기준)
