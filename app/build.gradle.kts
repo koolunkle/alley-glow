@@ -23,8 +23,8 @@ android {
         applicationId = "io.github.koolunkle.alleyglow"
         minSdk = 24
         targetSdk = 37
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.4"
 
 
         buildConfigField("String", "SUPABASE_URL", "\"${local.getProperty("supabase.url", "")}\"")
