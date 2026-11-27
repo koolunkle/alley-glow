@@ -29,7 +29,7 @@
 - 화면: `XxxRoute`(상태 보유, `hiltViewModel()`) + `XxxScreen`(상태 없음, Preview). 상태는 `StateFlow<XxxUiState>`(sealed interface).
 - `HttpClient`는 `di/NetworkModule`의 싱글턴 하나를 쓴다(baseUrl `/rest/v1/`, apikey 헤더, `expectSuccess`). 로그인 중이면 사용자 토큰을 Bearer로 붙인다. 인증(세션 저장·갱신)만 `SupabaseClient`가 맡는다.
 - 테마는 다크 하나(`AlleyGlowTheme`, 다이내믹 컬러 없음). 상태바와 내비바는 `SystemBarStyle.dark`로 둔다.
-- 디자인 토큰: 글꼴 Pretendard(`res/font`, Regular·Bold·Black만, OFL 사본 `res/raw/pretendard_license.txt`), 글자 크기는 `ui/theme/Type.kt`의 단계 이름(`headlineSmall` 화면 제목, `titleLarge` 카드 제목·큰 숫자, `displayMedium` 타이머 등)으로만, 간격은 `Spacing`(4·8·12·16·24), 모서리는 `MaterialTheme.shapes`(12·20·24), 주 버튼 높이 `TouchHeight` 56dp.
+- 디자인 토큰: 글꼴 Pretendard(`res/font`, Regular·Bold·Black만, OFL 사본 `res/raw/pretendard_license.txt`), 글자 크기는 `ui/theme/Type.kt`의 단계 이름(`headlineSmall` 화면 제목, `titleLarge` 카드 제목·큰 숫자, `displayMedium` 타이머 등)으로만, 간격은 `Spacing`(4·8·12·16·24), 모서리는 `MaterialTheme.shapes`(12·20·24), 주 버튼 높이 `TouchHeight` 56dp. 정보 카드 바탕은 `Modifier.cardSurface()`(안쪽 여백은 카드마다).
 - 역할 첫 화면(지도, 상인 리포트)은 `ui/common/AppTopBar`(서비스 이름 + 계정 아이콘 → 이름·역할·로그아웃 메뉴)를 쓴다.
 - 연두(primary)는 "지금 누를 것"(주 버튼, +1)과 작은 라벨에만 쓴다. 정보 카드에 연두 테두리·연두 바탕을 쓰지 않는다. 숫자와 그 숫자를 바꾸는 버튼은 한 카드에 둔다. 아이콘은 `res/drawable/ic_*.xml`(Material Icons 경로, 라이브러리 없이).
 - 화면 문구는 `res/values/strings.xml`(`stringResource`, 서비스는 `getString`)에 둔다. 제목·버튼은 짧은 명사형, 안내는 한 문장. ViewModel은 문구 대신 오류 종류(enum·object)를 넘기고 화면이 리소스로 바꾼다. 단위가 붙는 숫자 포맷(`formatWon`·`formatDistance` 등, 테스트 있음)만 코드에 둔다.
