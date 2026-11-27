@@ -1,4 +1,4 @@
-"""기획안용 그림 3장 → docs/figures/. zones.py 결과와 휴지통 좌표(data/raw)를 씀.
+"""분석 그림 3장 → docs/figures/. zones.py 결과와 휴지통 좌표(data/raw)를 씀.
 
 1. zones_score.png: 구역 추천도 격자
 2. zones_pop_bins.png: 금·토 야간 인구 격자 + 가로휴지통 위치
