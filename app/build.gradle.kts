@@ -14,13 +14,13 @@ val local = Properties().apply {
 }
 
 android {
-    namespace = "com.example.alleyglow"
+    namespace = "io.github.koolunkle.alleyglow"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.alleyglow"
+        applicationId = "io.github.koolunkle.alleyglow"
         minSdk = 24
         targetSdk = 37
         versionCode = 3
