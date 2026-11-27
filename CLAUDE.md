@@ -1,4 +1,4 @@
-# Night Clean (나이트 클린)
+# Alley Glow (앨리 글로우)
 
 2026 서울 야간경제 활성화 해커톤(AIFactory 9320) 출품작. 상권 골목 야간 청소 인력이 가게 광고를 달고 다니며 손님을 안내한다. 비용은 가게 광고비와 서울시 수거량 보상으로 나눈다. 시범 운영은 이태원 5개 가게.
 
@@ -27,7 +27,7 @@
 - 계층: `data/remote`(DTO는 `@SerialName` snake_case, DataSource) → `data/repository`(Kotlin `Result`, `CancellationException`은 다시 던짐) → `domain`(model, repository 인터페이스). UseCase는 두지 않는다.
 - 화면: `XxxRoute`(상태 보유, `hiltViewModel()`) + `XxxScreen`(상태 없음, Preview). 상태는 `StateFlow<XxxUiState>`(sealed interface).
 - `HttpClient`는 `di/NetworkModule`의 싱글턴 하나를 쓴다(baseUrl `/rest/v1/`, apikey 헤더, `expectSuccess`). 로그인 중이면 사용자 토큰을 Bearer로 붙인다. 인증(세션 저장·갱신)만 `SupabaseClient`가 맡는다.
-- 테마는 다크 하나(`NightCleanTheme`, 다이내믹 컬러 없음). 상태바와 내비바는 `SystemBarStyle.dark`로 둔다.
+- 테마는 다크 하나(`AlleyGlowTheme`, 다이내믹 컬러 없음). 상태바와 내비바는 `SystemBarStyle.dark`로 둔다.
 - 디자인 토큰: 글꼴 Pretendard(`res/font`, Regular·Bold·Black만, OFL 사본 `res/raw/pretendard_license.txt`), 글자 크기는 `ui/theme/Type.kt`의 단계 이름(`headlineSmall` 화면 제목, `titleLarge` 카드 제목·큰 숫자, `displayMedium` 타이머 등)으로만, 간격은 `Spacing`(4·8·12·16·24), 모서리는 `MaterialTheme.shapes`(12·20·24), 주 버튼 높이 `TouchHeight` 56dp.
 - 역할 첫 화면(지도, 상인 리포트)은 `ui/common/AppTopBar`(서비스 이름 + 계정 아이콘 → 이름·역할·로그아웃 메뉴)를 쓴다.
 - 연두(primary)는 "지금 누를 것"(주 버튼, +1)과 작은 라벨에만 쓴다. 정보 카드에 연두 테두리·연두 바탕을 쓰지 않는다. 숫자와 그 숫자를 바꾸는 버튼은 한 카드에 둔다. 아이콘은 `res/drawable/ic_*.xml`(Material Icons 경로, 라이브러리 없이).
@@ -46,7 +46,7 @@
 | 3. 가게 체크인 | Checkin | 상단 뒤로 가기 바(`ui/common/SubTopBar`), 들어오면 스캐너 바로 열기(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 결과는 모두 같은 틀(중앙보다 조금 위, 큰 원 아이콘 + 제목 + 한 줄 설명: 완료는 연두 원·"체크인 완료" 라벨·가게명 제목·이번 근무 몇 번째 체크인, 거리 초과·모르는 QR·오류는 주황), 성공 뒤 주 버튼은 근무 화면으로·실패 뒤는 다시 스캔(보조 버튼은 회색 글자) | 이번 슬롯 체크인 목록 |
 | 4. 근무 종료·수거량 입력 | Collection | 상단 뒤로 가기 바, 근무 요약 카드(근무 시간, 시급제 예상 수당), 입력 카드(`ui/common/SectionCard`, 필수/선택 칩): 시간대별 봉투 수(근무 중 기록이 기본값, 합계)·채운 봉투 사진(필수 1~3장)·청소 후 사진(선택 0~2장)·무게(선택, 일반·재활용 kg 칸, 하나라도 적으면 저울 사용·빈 칸은 0, 둘 다 비우면 저울 없음)·특이사항, 하단 고정 근무 종료하기, shifts·collections·Storage 저장 | 앱 프로세스가 재생성되면 입력 중인 폼(무게·봉투 수·사진) 초기화 |
 | 5. 상인 리포트 | ShopReport | 상단바(계정 메뉴에 가게 이름), 이번 달 지표 2×2 같은 높이 칸(청소한 밤, 치운 쓰레기(들른 근무의 채운 봉투 수), QR 스캔 수, 거리 청결도(랜딩 평가 평균)), 손님 카드("광고 보고 온 손님", 남색 카드 + 연두 +1), 최근 청소 기록 한 카드(구분선, 밤마다 날짜·시각·체크인 수와 청소 전·후 썸네일), 화면 복귀 때 새로 받기 | 광고 노출 시간(ad_slots가 가게·근무와 연결되면), 사진 크게 보기 |
-| 6. QR 랜딩 웹(시민) | `web/index.html` | 앱과 같은 디자인(상단 "Night Clean" + 연두 점 상태 칩 "이 골목은 지금 청소 중", 가게 카드, 혜택 카드: 연두 라벨 "오늘의 혜택" + 혜택 + 캠페인 문구, 연두 길찾기 버튼, 평가 카드 1~5 → 감사 표시, 오류는 주황 아이콘 안내 줄), 카카오맵 길찾기, 스캔 기록. GitHub Pages(`.github/workflows/pages.yml`) | 가게 대표 사진, 현재 위치에서의 거리 |
+| 6. QR 랜딩 웹(시민) | `web/index.html` | 앱과 같은 디자인(상단 "Alley Glow" + 연두 점 상태 칩 "이 골목은 지금 청소 중", 가게 카드, 혜택 카드: 연두 라벨 "오늘의 혜택" + 혜택 + 캠페인 문구, 연두 길찾기 버튼, 평가 카드 1~5 → 감사 표시, 오류는 주황 아이콘 안내 줄), 카카오맵 길찾기, 스캔 기록. GitHub Pages(`.github/workflows/pages.yml`) | 가게 대표 사진, 현재 위치에서의 거리 |
 
 - 사진 촬영과 썸네일은 `ui/common/PhotoRow` 하나를 쓴다(시스템 카메라, 캐시 photos/, EXIF 방향 반영, 카메라 아이콘 + 장수 칸, 썸네일 오른쪽 위 ×로 삭제). 업로드는 근무 종료 저장 때 한 번에.
 - 화면 이동: 로그인 → 지도(워커) 또는 상인 리포트(상인). 로그아웃은 스택을 비우고 로그인으로. 지도 → 근무 → 체크인(뒤로) / 근무 종료 → 지도(근무 기록은 스택에서 지움). 실제 기기에서 확인했다.
@@ -70,7 +70,7 @@
 - 디자인: 짙은 남색 배경 + 형광 연두 포인트 1개. 본문 글꼴 Pretendard. 모서리 16dp 이상. 장갑 낀 한 손 조작을 위해 터치 영역 56dp 이상.
 
 **메모와 다르게 간 것**
-- 서비스 이름: PRD·메모의 "야간 클린 워커", 시안의 가칭 "클린나이트" 대신 **Night Clean**(11/22 결정). 워커·상인·시민 세 역할을 다 덮는 이름. 문서에서 처음 쓸 때는 "Night Clean(나이트 클린)".
+- 서비스 이름: PRD·메모의 "야간 클린 워커", 시안의 가칭 "클린나이트", 11/22에 정한 "Night Clean"을 거쳐 **Alley Glow**(11/27 결정). 밤에 빛나는 골목, 야간경제 주제를 담는 이름. 문서에서 처음 쓸 때는 "Alley Glow(앨리 글로우)". 이전 이름이 남은 곳: 저장소·Pages 주소(`night-clean`, 인쇄한 QR이 가리킴), 가게 코드 `NC-SHOP-*`(DB 값), 서명 키 별칭 `nightclean`(키스토어 안 이름), Release 파일 `night-clean.apk`.
 - Koin 대신 Hilt. Domain 생략 대신 `domain`(model, repository 인터페이스). DTO = 모델 대신 DTO 분리. 위 '앱 구조와 규칙'이 기준이다.
 - 지도는 네이버 지도 SDK 대신 6×6 격자 그리드. 격자 경계 데이터가 들어오면 바꾼다.
 - 청소 전후 사진: 메모의 근무 기록 폼은 필수였지만, 시작 때 잊으면 근무를 마칠 수 없어 선택(각 최대 2장)으로 두고 '같은 자리, 같은 각도'를 안내한다.
@@ -102,5 +102,5 @@
 - `./gradlew.bat assembleDebug testDebugUnitTest`
 - 기기 설치: `./gradlew.bat installDebug`
 - 배포 APK: `./gradlew.bat assembleRelease` → `app/build/outputs/apk/release/app-release.apk`. 서명은 `local.properties`의 `release.storeFile`·`release.storePassword`(별칭 `nightclean`, 키스토어는 저장소 밖 `~/.android/`, 분실하면 같은 앱으로 업데이트 불가). R8은 꺼 둠(켜면 시작 즉시 `IllegalAccessError`, 다시 켤 때 `src/main/keepRules/`에 keep 규칙을 둔다). GitHub Release에 `night-clean.apk` 이름으로 올리면 README 링크(`releases/latest/download/night-clean.apk`)가 최신을 가리킨다. debug와 서명이 달라 기기에서 바꿔 설치하려면 먼저 지워야 한다(로그인 풀림).
-- 실행: `adb shell am start -n com.example.nightclean/.MainActivity`
+- 실행: `adb shell am start -n com.example.alleyglow/.MainActivity`
 - 개인 링크, Supabase 프로젝트 id, 기기 정보는 `CLAUDE.local.md`(git 제외)에 둔다.
