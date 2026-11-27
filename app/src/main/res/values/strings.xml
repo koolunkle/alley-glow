@@ -17,6 +17,7 @@
     <string name="login_submit">로그인</string>
     <string name="login_error_empty">이메일과 비밀번호를 입력해 주세요.</string>
     <string name="login_error_unregistered">등록되지 않은 계정이에요. 운영자에게 문의해 주세요.</string>
+    <string name="login_restore_error">계정 정보를 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.</string>
     <string name="login_error_failed">로그인하지 못했어요. 이메일, 비밀번호, 네트워크를 확인해 주세요.</string>
 
     <!-- 사진 칸·위치 기록 알림 -->

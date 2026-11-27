@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.domain.model.UserRole
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
+import io.github.koolunkle.alleyglow.ui.common.LoadFailedNotice
 import io.github.koolunkle.alleyglow.ui.theme.AlleyGlowTheme
 
 @Composable
@@ -58,6 +59,7 @@ fun LoginRoute(
         onEmailChange = { email = it },
         onPasswordChange = { password = it },
         onSubmit = { viewModel.signIn(email, password) },
+        onRetryRestore = viewModel::restoreSession,
     )
 }
 
@@ -69,8 +71,19 @@ fun LoginScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    onRetryRestore: () -> Unit,
 ) {
     Scaffold { padding ->
+        if (uiState is LoginUiState.RestoreFailed) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                LoadFailedNotice(stringResource(R.string.login_restore_error), onRetryRestore)
+            }
+            return@Scaffold
+        }
         if (uiState !is LoginUiState.Input) {
             Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
@@ -139,7 +152,7 @@ private fun LoginScreenPreview() {
             uiState = LoginUiState.Input(error = LoginError.FAILED),
             email = "worker@example.com",
             password = "secret",
-            onEmailChange = {}, onPasswordChange = {}, onSubmit = {},
+            onEmailChange = {}, onPasswordChange = {}, onSubmit = {}, onRetryRestore = {},
         )
     }
 }

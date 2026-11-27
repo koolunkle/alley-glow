@@ -47,6 +47,17 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun `세션 확인이 실패하면 입력 폼 대신 다시 시도 안내를 보여준다`() {
+        val vm = viewModel(FakeAuth(session = Result.failure(java.io.IOException())))
+        assertEquals(LoginUiState.RestoreFailed, vm.uiState.value)
+    }
+
+    @Test
+    fun `세션 확인에서 역할 없는 계정이면 입력 상태가 된다`() {
+        assertEquals(LoginUiState.Input(), viewModel(FakeAuth(session = Result.failure(UnregisteredAccountException()))).uiState.value)
+    }
+
+    @Test
     fun `로그아웃으로 들어오면 세션을 지우고 입력 상태가 된다`() {
         val auth = FakeAuth(session = Result.success(UserRole.WORKER))
         val vm = viewModel(auth, signOut = true)

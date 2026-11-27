@@ -24,15 +24,24 @@ class LoginViewModel @Inject constructor(
     init {
         // AppRoute.Login(signOut = true)로 들어오면 로그아웃부터
         val signOut = savedStateHandle.get<Boolean>("signOut") == true
-        viewModelScope.launch {
-            if (signOut) {
+        if (signOut) {
+            viewModelScope.launch {
                 repository.signOut()
                 _uiState.value = LoginUiState.Input()
-            } else {
-                _uiState.value = repository.restoreSession().getOrNull()
-                    ?.let { LoginUiState.SignedIn(it) }
-                    ?: LoginUiState.Input()
             }
+        } else {
+            restoreSession()
+        }
+    }
+
+    fun restoreSession() {
+        _uiState.value = LoginUiState.Checking
+        viewModelScope.launch {
+            _uiState.value = repository.restoreSession().fold(
+                onSuccess = { role -> role?.let { LoginUiState.SignedIn(it) } ?: LoginUiState.Input() },
+                // 저장된 세션은 남아 있으므로 입력 폼(로그아웃처럼 보임) 대신 다시 시도 안내
+                onFailure = { e -> if (e is UnregisteredAccountException) LoginUiState.Input() else LoginUiState.RestoreFailed },
+            )
         }
     }
 
