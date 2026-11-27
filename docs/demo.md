@@ -4,22 +4,27 @@
 
 ## 미리 할 일
 
-### 12/1 이후 1번: 시연용 예시 데이터를 12월로 옮기기
-상인 리포트는 **이번 달**만 센다. 11월 예시(11/13·14·20·21)를 3주 뒤 금·토(12/4·5·11·12)로 옮긴다.
+### 예시 데이터 날짜 갱신
+상인 리포트는 **이번 달**만 센다. 예시 데이터가 지난달에 머물면 리포트가 비므로, 리포트를 보여 주기 전에 아래 SQL을 SQL Editor에서 실행한다. 가장 최근에 지난 토요일 밤을 기준으로 주 단위로 이동하므로 요일과 시각은 그대로이고, 이미 최근이면 아무것도 바뀌지 않는다.
 
 ```sql
 begin;
-update public.shifts set started_at = started_at + interval '21 days', ended_at = ended_at + interval '21 days'
+create temp table demo_shift on commit drop as
+select make_interval(weeks => greatest(0, floor((
+  (((now() at time zone 'Asia/Seoul') - interval '6 hours')::date - 1)
+  - max((started_at at time zone 'Asia/Seoul')::date)) / 7.0)::int)) as d
+from public.shifts where id::text like '00000000-0000-4000-8000-%';
+update public.shifts set started_at = started_at + (select d from demo_shift), ended_at = ended_at + (select d from demo_shift)
   where id::text like '00000000-0000-4000-8000-%';
-update public.checkins set checked_at = checked_at + interval '21 days'
+update public.checkins set checked_at = checked_at + (select d from demo_shift)
   where shift_id::text like '00000000-0000-4000-8000-%';
-update public.collections set created_at = created_at + interval '21 days'
+update public.collections set created_at = created_at + (select d from demo_shift)
   where shift_id::text like '00000000-0000-4000-8000-%';
-update public.guest_visits set created_at = created_at + interval '21 days' where created_at < '2026-11-22';
-update public.qr_scans set scanned_at = scanned_at + interval '21 days' where scanned_at < '2026-11-22';
+update public.guest_visits set created_at = created_at + (select d from demo_shift) where id between 6 and 12;
+update public.qr_scans set scanned_at = scanned_at + (select d from demo_shift) where id::text like '00000000-0000-4000-8000-%';
 commit;
 ```
-옮긴 뒤 CLAUDE.md의 예시 데이터 날짜와 정리 SQL 기준일(`'2026-11-22'` → `'2026-12-13'`)도 고친다.
+월초에는 옮긴 네 밤 중 일부가 지난달에 남아 리포트 숫자가 작게 나올 수 있다. 실제 데이터도 월초에는 그렇다.
 
 ### 본선 전날: 데모 가게를 행사장으로 옮기기
 체크인은 가게에서 50m 안이어야 인정된다. 행사장에서 체크인하려면 데모 상인 가게(`NC-SHOP-001`)의 좌표를 행사장 시연 자리로 옮긴다. 그러면 체크인 → 상인 리포트 반영이 같은 가게로 이어진다.
