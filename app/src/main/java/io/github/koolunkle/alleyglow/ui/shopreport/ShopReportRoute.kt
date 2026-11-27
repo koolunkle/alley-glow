@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.domain.model.NightRecord
 import io.github.koolunkle.alleyglow.domain.model.ShopReport
+import io.github.koolunkle.alleyglow.ui.common.LoadFailedNotice
 import io.github.koolunkle.alleyglow.ui.common.AppTopBar
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.theme.AlleyGlowTheme
@@ -95,10 +96,7 @@ fun ShopReportScreen(
                     CircularProgressIndicator()
                 }
                 ShopReportUiState.NoShop -> Text(stringResource(R.string.report_no_shop))
-                ShopReportUiState.Error -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text(stringResource(R.string.report_load_error))
-                    Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-                }
+                ShopReportUiState.Error -> LoadFailedNotice(stringResource(R.string.report_load_error), onRetry)
                 is ShopReportUiState.Success -> Report(uiState, onAddGuest, loadPhoto)
             }
         }

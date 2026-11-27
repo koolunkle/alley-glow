@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.domain.model.Zone
 import io.github.koolunkle.alleyglow.ui.checkin.formatDistance
+import io.github.koolunkle.alleyglow.ui.common.LoadFailedNotice
 import io.github.koolunkle.alleyglow.ui.common.AppTopBar
 import io.github.koolunkle.alleyglow.ui.theme.AlleyGlowTheme
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
@@ -103,10 +104,7 @@ fun ZoneMapScreen(
                 ZoneMapUiState.Loading -> Box(Modifier.fillMaxWidth().aspectRatio(1f), Alignment.Center) {
                     CircularProgressIndicator()
                 }
-                ZoneMapUiState.Error -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text(stringResource(R.string.zonemap_load_error))
-                    Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-                }
+                ZoneMapUiState.Error -> LoadFailedNotice(stringResource(R.string.zonemap_load_error), onRetry)
                 is ZoneMapUiState.Success -> {
                     val ranks = remember(uiState.zones) {
                         uiState.zones.sortedByDescending { it.score }.mapIndexed { i, z -> z.id to i + 1 }.toMap()

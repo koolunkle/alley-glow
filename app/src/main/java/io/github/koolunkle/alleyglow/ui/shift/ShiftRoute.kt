@@ -64,6 +64,7 @@ import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.currentAt
 import io.github.koolunkle.alleyglow.domain.model.nextAfter
 import io.github.koolunkle.alleyglow.domain.model.nightHour
+import io.github.koolunkle.alleyglow.ui.common.LoadFailedNotice
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.common.PhotoRow
 import io.github.koolunkle.alleyglow.ui.common.SectionCard
@@ -226,10 +227,7 @@ fun ShiftScreen(
             }
             when (uiState) {
                 ShiftUiState.Loading -> Box(Modifier.fillMaxWidth(), Alignment.Center) { CircularProgressIndicator() }
-                ShiftUiState.Error -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text(stringResource(R.string.shift_slots_error))
-                    Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-                }
+                ShiftUiState.Error -> LoadFailedNotice(stringResource(R.string.shift_slots_error), onRetry)
                 is ShiftUiState.Success -> {
                     val hour = nightHour(now.hourOfDay())
                     SlotCard(uiState.slots.currentAt(hour), uiState.slots.nextAfter(hour))
