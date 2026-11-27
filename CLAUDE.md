@@ -16,7 +16,7 @@
 - `public.track_points(shift_id → shifts, recorded_at, lat, lng, accuracy_m)`: 근무 중 GPS. 워커 본인 근무에만 쓰고 읽는다. 앱의 `data/tracking/LocationTrackingService`(위치 타입 포그라운드 서비스)가 30초마다 받아 5개씩(약 2분 30초마다) 올리고, 올리기 전에 근무 행이 없으면 종료 시각 없이 만든다(ignore-duplicates). 근무 화면의 ViewModel이 사라질 때(근무 종료 저장 또는 화면 이탈) 멈춘다.
 - `public.guest_visits(shop_id, created_at)`: 광고 보고 온 손님 +1(캠페인 문구 "클린 워커 보고 왔어요", 랜딩 웹과 같은 문구). 상인 본인 가게만 쓰고 읽는다.
 - `rpc/shop_report`(GET, security definer): 호출한 상인 가게의 이번 달 집계 JSON(청소한 밤, 들른 근무의 채운 봉투 수(와 v1.0용 kg), 손님 수, QR 스캔 수, 청결도 평균, 최근 5밤과 밤마다 청소 전·후 사진 경로 1장씩). 서울 시각 기준이고 밤 날짜는 '서울 시각 − 6시간'. 상인이 아니면 null. 상인에게 워커 테이블을 열지 않으려고 함수로 둔다.
-- 시연 동선·사전 SQL(예시 데이터 날짜 갱신, 데모 가게를 행사장으로)·당일 체크리스트는 `docs/demo.md`.
+- 시연 가이드(동선·대본, 사전 SQL: 예시 데이터 날짜 갱신과 데모 가게를 시연 장소로 옮기기, 시작 전 체크리스트)는 `docs/demo.md`.
 - 시연용 예시 데이터: 금·토 두 주(처음 넣은 날짜는 11/13·14·20·21, 리포트가 이번 달만 세므로 `docs/demo.md`의 SQL로 날짜를 최근 주말 기준으로 갱신한다) 19~23시 근무 4건, 수거량 4건(특이사항 `[시연용 예시]`), 체크인 10건, 데모 상인 가게 손님 7건, 같은 네 밤 데모 상인 가게 QR 스캔 23건(평가 9건, 평균 4.2점), 근무마다 청소 전·후 예시 그림 1장씩. 근무 id와 QR 스캔 id는 `00000000-0000-4000-8000-` 접두, 손님 id는 6~12. 실제 데이터와 섞이지 않게 실측 데이터를 넣기 전에 지운다: `delete from public.shifts where id::text like '00000000-0000-4000-8000-%';`(수거량·체크인은 cascade) 그리고 `delete from public.guest_visits where id between 6 and 12;`, `delete from public.qr_scans where id::text like '00000000-0000-4000-8000-%';`
 - 쓰기가 필요한 테이블은 `authenticated` + `auth.uid()` 기준 RLS로 연다. anon 쓰기는 열지 않는다(시민 QR 웹 제외).
 - 접속 정보는 `local.properties`의 `supabase.url`, `supabase.key`(publishable key)에서 BuildConfig로 들어간다. git에 올리지 않는다.
