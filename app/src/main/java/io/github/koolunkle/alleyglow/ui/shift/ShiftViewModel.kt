@@ -10,6 +10,8 @@ import io.github.koolunkle.alleyglow.domain.repository.AdSlotRepository
 import io.github.koolunkle.alleyglow.domain.repository.CheckinRepository
 import io.github.koolunkle.alleyglow.domain.repository.TrackingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.koolunkle.alleyglow.ui.common.plusUpTo
+import io.github.koolunkle.alleyglow.ui.common.withoutIndex
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,12 +47,11 @@ class ShiftViewModel @Inject constructor(
     val beforePhotos: StateFlow<List<String>> = savedStateHandle.getStateFlow(KEY_BEFORE_PHOTOS, emptyList())
 
     fun addBeforePhoto(path: String) {
-        val photos = beforePhotos.value
-        if (photos.size < MAX_BEFORE_AFTER_PHOTOS) savedStateHandle[KEY_BEFORE_PHOTOS] = ArrayList(photos + path)
+        savedStateHandle[KEY_BEFORE_PHOTOS] = ArrayList(beforePhotos.value.plusUpTo(path, MAX_BEFORE_AFTER_PHOTOS))
     }
 
     fun removeBeforePhoto(index: Int) {
-        savedStateHandle[KEY_BEFORE_PHOTOS] = ArrayList(beforePhotos.value.filterIndexed { i, _ -> i != index })
+        savedStateHandle[KEY_BEFORE_PHOTOS] = ArrayList(beforePhotos.value.withoutIndex(index))
     }
 
     private val _checkinCount = MutableStateFlow(0)

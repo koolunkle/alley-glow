@@ -22,6 +22,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.koolunkle.alleyglow.data.repository.result
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,7 +85,7 @@ class LocationTrackingService : Service() {
             return START_NOT_STICKY
         }
         running.value = true
-        scope.launch { runCatching { remote.insertShiftIfAbsent(started) } }
+        scope.launch { result { remote.insertShiftIfAbsent(started) } }
         return START_NOT_STICKY
     }
 
@@ -95,7 +96,7 @@ class LocationTrackingService : Service() {
         val current = shift
         val rest = buffer.toList()
         if (current != null && rest.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch { runCatching { upload(current, rest) } }
+            CoroutineScope(Dispatchers.IO).launch { result { upload(current, rest) } }
         }
         scope.cancel()
         super.onDestroy()
