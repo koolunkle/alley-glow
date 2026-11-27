@@ -9,7 +9,7 @@
 
 [Android APK 내려받기](https://github.com/koolunkle/night-clean/releases/latest/download/night-clean.apk) (Android 7.0 이상)
 
-- 회원가입이 없어 운영자가 발급한 계정으로만 로그인할 수 있습니다.
+- 회원가입이 없어 운영자가 발급한 계정으로만 로그인할 수 있습니다. 공개 데모 계정은 없으니 화면은 아래 [주요 화면](#주요-화면) 스크린샷으로 확인해 주세요.
 - Play 스토어 앱이 아니라서 설치할 때 '출처를 알 수 없는 앱' 허용이 필요합니다.
 - 시민용 QR 랜딩은 설치 없이 웹으로 열립니다.
 
