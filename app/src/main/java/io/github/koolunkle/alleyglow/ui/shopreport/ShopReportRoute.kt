@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Locale
+import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
 @Composable
 fun ShopReportRoute(
@@ -138,7 +138,7 @@ private fun RowScope.Metric(label: String, value: String, caption: String) {
         Modifier
             .weight(1f)
             .fillMaxHeight()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -154,7 +154,7 @@ private fun GuestCard(guests: Int, isAdding: Boolean, failed: Boolean, onAdd: ()
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
@@ -182,7 +182,7 @@ private fun RecentNights(nights: List<NightRecord>, loadPhoto: suspend (String) 
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
@@ -229,7 +229,7 @@ private fun NightPhoto(path: String?, label: String, loadPhoto: suspend (String)
         }
     }
     Box(
-        Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.background),
+        Modifier.size(56.dp).clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.BottomCenter,
     ) {
         image?.let { Image(it, contentDescription = stringResource(R.string.report_photo_desc, label), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }

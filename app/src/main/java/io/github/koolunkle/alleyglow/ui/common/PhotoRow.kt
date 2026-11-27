@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,6 +44,7 @@ import io.github.koolunkle.alleyglow.image.decodeUpright
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import io.github.koolunkle.alleyglow.ui.theme.Spacing
 
 /**
  * 찍은 사진 썸네일(삭제 가능) + 촬영 버튼. 시스템 카메라로만 찍음(갤러리 선택 불가).
@@ -61,8 +61,8 @@ fun PhotoRow(
 ) {
     // IDE 미리보기에는 카메라를 띄울 액티비티가 없어 썸네일 자리만 그림
     if (LocalInspectionMode.current) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            repeat(photos.size) { Box(Modifier.size(88.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.background)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            repeat(photos.size) { Box(Modifier.size(88.dp).clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.background)) }
         }
         return
     }
@@ -75,7 +75,7 @@ fun PhotoRow(
         pending = null
         if (saved) onAdd(path) else File(path).delete()
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
         photos.forEachIndexed { index, path ->
             PhotoThumb(path, "$label ${index + 1}", enabled) { onRemove(index) }
         }
@@ -87,7 +87,7 @@ fun PhotoRow(
                     takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
                 },
                 enabled = enabled,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.small,
                 // 카드(surfaceVariant) 안에 놓이므로 한 단계 어두운 바탕
                 color = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -109,7 +109,7 @@ private fun PhotoThumb(path: String, label: String, enabled: Boolean, onRemove: 
     val image by produceState<ImageBitmap?>(null, path) {
         value = withContext(Dispatchers.IO) { decodeUpright(path, maxSide = 264)?.asImageBitmap() }
     }
-    Box(Modifier.size(88.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.background)) {
+    Box(Modifier.size(88.dp).clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.background)) {
         image?.let { Image(it, contentDescription = label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
         if (enabled) {
             // 보이는 원은 24dp, 누르는 영역은 40dp

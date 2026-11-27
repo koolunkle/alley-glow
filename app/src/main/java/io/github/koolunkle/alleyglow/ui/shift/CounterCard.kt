@@ -1,6 +1,5 @@
 package io.github.koolunkle.alleyglow.ui.shift
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
 import io.github.koolunkle.alleyglow.ui.theme.TouchHeight
+import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
 /** 이름, 큰 숫자, 아래쪽 버튼 줄 */
 @Composable
@@ -31,7 +31,7 @@ internal fun RowScope.CounterCard(label: String, value: String, actions: @Compos
         Modifier
             .weight(1f)
             .fillMaxHeight()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

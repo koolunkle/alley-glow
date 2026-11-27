@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
+import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
 /** 위치 수집 동의(메모: 근무 중에만 수집, 동의 화면 1개). 근무마다 눌러야 기록이 시작됨 */
 @Composable
@@ -26,7 +27,7 @@ internal fun TrackingConsent(permissionDenied: Boolean, onStart: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(start = Spacing.l, end = Spacing.m, top = Spacing.m, bottom = Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {

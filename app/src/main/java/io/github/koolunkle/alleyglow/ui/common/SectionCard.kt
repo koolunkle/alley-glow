@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
+import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
 /** 입력 묶음 카드: 제목 + 필수/선택 칩 + 한 줄 안내 + 내용. 근무 중·근무 종료 공통 */
 @Composable
@@ -29,7 +30,7 @@ fun SectionCard(
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {

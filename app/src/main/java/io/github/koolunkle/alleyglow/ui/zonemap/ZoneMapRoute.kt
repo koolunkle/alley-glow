@@ -56,6 +56,7 @@ import io.github.koolunkle.alleyglow.ui.theme.Spacing
 import io.github.koolunkle.alleyglow.ui.theme.TouchHeight
 import java.util.Locale
 import kotlin.math.roundToInt
+import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
 // shortcut: 이태원역이 있는 칸 고정(analysis/zones.py의 STATION 칸), 분석 범위가 바뀌면 zones에 표식 열 추가
 private const val STATION_ZONE_ID = "G20"
@@ -131,7 +132,7 @@ private fun MapCard(zones: List<Zone>, ranks: Map<String, Int>, selectedZoneId: 
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
@@ -230,7 +231,7 @@ private fun ZoneCard(zone: Zone, rank: Int, total: Int, onStart: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {

@@ -39,6 +39,8 @@ import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.common.LoadFailedNotice
 import io.github.koolunkle.alleyglow.ui.theme.AlleyGlowTheme
+import io.github.koolunkle.alleyglow.ui.theme.Spacing
+import io.github.koolunkle.alleyglow.ui.theme.TouchHeight
 
 @Composable
 fun LoginRoute(
@@ -76,8 +78,8 @@ fun LoginScreen(
     Scaffold { padding ->
         if (uiState is LoginUiState.RestoreFailed) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize().padding(padding).padding(Spacing.l),
+                verticalArrangement = Arrangement.spacedBy(Spacing.l),
             ) {
                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
                 LoadFailedNotice(stringResource(R.string.login_restore_error), onRetryRestore)
@@ -89,8 +91,8 @@ fun LoginScreen(
             return@Scaffold
         }
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(Spacing.l),
+            verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
             OutlinedTextField(
@@ -124,7 +126,7 @@ fun LoginScreen(
             Button(
                 onClick = onSubmit,
                 enabled = !uiState.isSubmitting,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(TouchHeight),
             ) {
                 if (uiState.isSubmitting) {
                     CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)

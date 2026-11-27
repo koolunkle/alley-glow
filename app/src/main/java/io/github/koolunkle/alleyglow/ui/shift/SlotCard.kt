@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.domain.model.AdSlot
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
+import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
 /** 지금 광고(작은 연두 라벨 + 가게명)와 다음 광고 한 줄을 한 카드에 */
 @Composable
@@ -26,7 +27,7 @@ internal fun SlotCard(current: AdSlot?, next: AdSlot?) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {

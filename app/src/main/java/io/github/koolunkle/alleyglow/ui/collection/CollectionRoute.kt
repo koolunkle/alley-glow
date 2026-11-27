@@ -52,6 +52,7 @@ import io.github.koolunkle.alleyglow.ui.common.SubTopBar
 import io.github.koolunkle.alleyglow.ui.theme.AlleyGlowTheme
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
 import io.github.koolunkle.alleyglow.ui.theme.TouchHeight
+import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
 @Composable
 fun CollectionRoute(
@@ -203,7 +204,7 @@ private fun WorkSummary(workedMinutes: Long) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+            .cardSurface()
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
