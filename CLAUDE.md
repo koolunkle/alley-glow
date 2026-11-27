@@ -71,7 +71,7 @@
 - 디자인: 짙은 남색 배경 + 형광 연두 포인트 1개. 본문 글꼴 Pretendard. 모서리 16dp 이상. 장갑 낀 한 손 조작을 위해 터치 영역 56dp 이상.
 
 **메모와 다르게 간 것**
-- 서비스 이름: PRD·메모의 "야간 클린 워커", 시안의 가칭 "클린나이트", 11/22에 정한 "Night Clean"을 거쳐 **Alley Glow**(11/27 결정). 밤에 빛나는 골목, 야간경제 주제를 담는 이름. 문서에서 처음 쓸 때는 "Alley Glow(앨리 글로우)". 패키지는 `io.github.koolunkle.alleyglow`(Play 스토어가 `com.example`을 받지 않아 11/27에 바꿈). 이전 이름이 남은 곳: 저장소·Pages 주소(`night-clean`, 인쇄한 QR이 가리킴), 가게 코드 `NC-SHOP-*`(DB 값), 서명 키 별칭 `nightclean`(키스토어 안 이름), Release 파일 `night-clean.apk`.
+- 서비스 이름: PRD·메모의 "야간 클린 워커", 시안의 가칭 "클린나이트", 11/22에 정한 "Night Clean"을 거쳐 **Alley Glow**(11/27 결정). 밤에 빛나는 골목, 야간경제 주제를 담는 이름. 문서에서 처음 쓸 때는 "Alley Glow(앨리 글로우)". 패키지는 `io.github.koolunkle.alleyglow`(Play 스토어가 `com.example`을 받지 않아 11/27에 바꿈). 저장소·Pages 주소도 `alley-glow`로 바꿨다(11/27, 예전 Pages 주소 `…/night-clean/`는 넘겨주지 않아 그 주소로 인쇄한 QR은 더 열리지 않음). 이전 이름이 남은 곳: 가게 코드 `NC-SHOP-*`(DB 값), 서명 키 별칭 `nightclean`(키스토어 안 이름), v1.3까지의 Release 파일 `night-clean.apk`, 로컬 작업 폴더 이름.
 - Koin 대신 Hilt. Domain 생략 대신 `domain`(model, repository 인터페이스). DTO = 모델 대신 DTO 분리. 위 '앱 구조와 규칙'이 기준이다.
 - 지도는 네이버 지도 SDK 대신 6×6 격자 그리드. 격자 경계 데이터가 들어오면 바꾼다.
 - 청소 전후 사진: 메모의 근무 기록 폼은 필수였지만, 시작 때 잊으면 근무를 마칠 수 없어 선택(각 최대 2장)으로 두고 '같은 자리, 같은 각도'를 안내한다.
@@ -99,6 +99,6 @@
 ## 빌드·실행
 - `./gradlew.bat assembleDebug testDebugUnitTest`
 - 기기 설치: `./gradlew.bat installDebug`
-- 배포 APK: `./gradlew.bat assembleRelease` → `app/build/outputs/apk/release/app-release.apk`. 서명은 `local.properties`의 `release.storeFile`·`release.storePassword`(별칭 `nightclean`, 키스토어는 저장소 밖 `~/.android/`, 분실하면 같은 앱으로 업데이트 불가). R8은 꺼 둠(켜면 시작 즉시 `IllegalAccessError`, 다시 켤 때 `src/main/keepRules/`에 keep 규칙을 둔다). GitHub Release에 `night-clean.apk` 이름으로 올리면 README 링크(`releases/latest/download/night-clean.apk`)가 최신을 가리킨다. debug와 서명이 달라 기기에서 바꿔 설치하려면 먼저 지워야 한다(로그인 풀림).
+- 배포 APK: `./gradlew.bat assembleRelease` → `app/build/outputs/apk/release/app-release.apk`. 서명은 `local.properties`의 `release.storeFile`·`release.storePassword`(별칭 `nightclean`, 키스토어는 저장소 밖 `~/.android/`, 분실하면 같은 앱으로 업데이트 불가). R8은 꺼 둠(켜면 시작 즉시 `IllegalAccessError`, 다시 켤 때 `src/main/keepRules/`에 keep 규칙을 둔다). GitHub Release에 `alley-glow.apk` 이름으로 올리면 README 링크(`releases/latest/download/alley-glow.apk`)가 최신을 가리킨다. debug와 서명이 달라 기기에서 바꿔 설치하려면 먼저 지워야 한다(로그인 풀림).
 - 실행: `adb shell am start -n io.github.koolunkle.alleyglow/.MainActivity`
 - 개인 링크, Supabase 프로젝트 id, 기기 정보는 `CLAUDE.local.md`(git 제외)에 둔다.
