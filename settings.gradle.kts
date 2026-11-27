@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NightClean"
+rootProject.name = "AlleyGlow"
 include(":app")

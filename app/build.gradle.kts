@@ -14,13 +14,13 @@ val local = Properties().apply {
 }
 
 android {
-    namespace = "com.example.nightclean"
+    namespace = "com.example.alleyglow"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.nightclean"
+        applicationId = "com.example.alleyglow"
         minSdk = 24
         targetSdk = 37
         versionCode = 2
