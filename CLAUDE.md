@@ -20,6 +20,7 @@
 - 시연용 예시 데이터: 금·토 두 주(처음 넣은 날짜는 11/13·14·20·21, 리포트가 이번 달만 세므로 `docs/demo.md`의 SQL로 날짜를 최근 주말 기준으로 갱신한다) 19~23시 근무 4건, 수거량 4건(특이사항 `[시연용 예시]`), 체크인 10건, 데모 상인 가게 손님 7건, 같은 네 밤 데모 상인 가게 QR 스캔 23건(평가 9건, 평균 4.2점), 근무마다 청소 전·후 예시 그림 1장씩. 근무 id와 QR 스캔 id는 `00000000-0000-4000-8000-` 접두, 손님 id는 6~12. 실제 데이터와 섞이지 않게 실측 데이터를 넣기 전에 지운다: `delete from public.shifts where id::text like '00000000-0000-4000-8000-%';`(수거량·체크인은 cascade) 그리고 `delete from public.guest_visits where id between 6 and 12;`, `delete from public.qr_scans where id::text like '00000000-0000-4000-8000-%';`
 - 쓰기가 필요한 테이블은 `authenticated` + `auth.uid()` 기준 RLS로 연다. anon 쓰기는 열지 않는다(시민 QR 웹 제외).
 - 접속 정보는 `local.properties`의 `supabase.url`, `supabase.key`(publishable key)에서 BuildConfig로 들어간다. git에 올리지 않는다.
+- 무료 플랜이라 7일간 요청이 없으면 프로젝트가 일시 정지된다(앱·랜딩 웹 모두 멈춤). `.github/workflows/keep-alive.yml`이 사흘마다 `zones` 1행을 읽어 막는다(Secrets는 Pages 배포와 같은 것). 공개 저장소에 60일간 커밋이 없으면 GitHub가 이 예약 실행을 끄므로 Actions 탭에서 다시 켠다. 이미 멈췄으면 대시보드에서 Restore.
 
 ## 앱 구조와 규칙
 - Kotlin, Compose, AGP 9.5.2, minSdk 24 / target·compileSdk 37.
