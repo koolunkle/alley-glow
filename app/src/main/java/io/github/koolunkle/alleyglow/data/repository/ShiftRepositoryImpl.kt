@@ -6,7 +6,6 @@ import io.github.koolunkle.alleyglow.data.remote.dto.toCollectionDto
 import io.github.koolunkle.alleyglow.data.remote.dto.toShiftDto
 import io.github.koolunkle.alleyglow.domain.model.ShiftRecord
 import io.github.koolunkle.alleyglow.domain.repository.ShiftRepository
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 class ShiftRepositoryImpl @Inject constructor(
@@ -15,7 +14,7 @@ class ShiftRepositoryImpl @Inject constructor(
 ) : ShiftRepository {
 
     // 근무 → 사진 → 수거량 순서(collections가 shifts를 참조하고 사진 경로를 담음)
-    override suspend fun finishShift(record: ShiftRecord): Result<Unit> = try {
+    override suspend fun finishShift(record: ShiftRecord): Result<Unit> = result {
         remote.upsertShift(record.toShiftDto())
         // 파일 이름 고정(photo-1, before-1 …)이라 재시도해도 같은 파일을 덮어씀
         suspend fun upload(locals: List<String>, prefix: String) = locals.mapIndexed { i, local ->
@@ -27,10 +26,5 @@ class ShiftRepositoryImpl @Inject constructor(
             afterPhotoPaths = upload(record.afterPhotos, "after"),
         )
         remote.insertCollection(collection)
-        Result.success(Unit)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Result.failure(e)
     }
 }

@@ -5,7 +5,6 @@ import io.github.koolunkle.alleyglow.data.remote.dto.toUserRole
 import io.github.koolunkle.alleyglow.domain.model.UserRole
 import io.github.koolunkle.alleyglow.domain.repository.AuthRepository
 import io.github.koolunkle.alleyglow.domain.repository.UnregisteredAccountException
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
@@ -31,12 +30,4 @@ class AuthRepositoryImpl @Inject constructor(
             remote.signOut()
             throw UnregisteredAccountException()
         }
-
-    private inline fun <T> result(block: () -> T): Result<T> = try {
-        Result.success(block())
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Result.failure(e)
-    }
 }

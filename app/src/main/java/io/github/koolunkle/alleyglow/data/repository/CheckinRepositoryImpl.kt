@@ -7,7 +7,6 @@ import io.github.koolunkle.alleyglow.data.remote.dto.toIsoUtc
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 import io.github.koolunkle.alleyglow.domain.repository.CheckinRepository
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 class CheckinRepositoryImpl @Inject constructor(
@@ -20,20 +19,12 @@ class CheckinRepositoryImpl @Inject constructor(
         startedAt: Long,
         shopCode: String,
         location: GeoPoint,
-    ): Result<CheckinResult> = try {
+    ): Result<CheckinResult> = result {
         val request = CheckinRequestDto(shiftId, zoneId, startedAt.toIsoUtc(), shopCode, location.lat, location.lng)
-        Result.success(remote.checkIn(request).toCheckinResult(shopCode))
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Result.failure(e)
+        remote.checkIn(request).toCheckinResult(shopCode)
     }
 
-    override suspend fun countCheckins(shiftId: String): Result<Int> = try {
-        Result.success(remote.countCheckins(shiftId))
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Result.failure(e)
+    override suspend fun countCheckins(shiftId: String): Result<Int> = result {
+        remote.countCheckins(shiftId)
     }
 }
