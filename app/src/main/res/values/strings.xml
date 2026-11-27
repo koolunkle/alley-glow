@@ -1,6 +1,6 @@
 <resources>
     <!-- 공통 -->
-    <string name="app_name">Night Clean</string>
+    <string name="app_name">Alley Glow</string>
     <string name="role_worker">워커</string>
     <string name="role_shop">상인</string>
     <string name="account_menu">계정 메뉴</string>
@@ -89,7 +89,7 @@
     <string name="checkin_too_far_title">%1$s 떨어져 있어요</string>
     <string name="checkin_too_far_caption">가게 앞 50m 안에서 다시 스캔해 주세요</string>
     <string name="checkin_unknown_title">등록되지 않은 QR</string>
-    <string name="checkin_unknown_caption">가게에 붙은 Night Clean QR을 스캔해 주세요</string>
+    <string name="checkin_unknown_caption">가게에 붙은 Alley Glow QR을 스캔해 주세요</string>
     <string name="checkin_unknown_value">읽은 값: %1$s</string>
     <string name="checkin_error_title">체크인하지 못했어요</string>
     <string name="checkin_error_location">현재 위치를 확인하지 못했어요. 위치 서비스를 켜고 다시 시도해 주세요.</string>
