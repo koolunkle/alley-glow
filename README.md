@@ -39,7 +39,7 @@
 | 화면                | 역할                                                                                                       | 상태                                |
 |---------------------|------------------------------------------------------------------------------------------------------------|-------------------------------------|
 | 로그인              | 운영자가 발급한 계정으로 로그인, 워커·상인 역할별 첫 화면                                                  | 구현 (Supabase Auth)                |
-| 구역 지도           | 250m 격자별 배치 추천도(공공데이터)를 보고, 구역 카드에서 근거를 확인한 뒤 근무 구역 선택                  | 구현 (Supabase 연동)                |
+| 구역 지도           | 250m 격자별 배치 추천도(공공데이터)를 평균 또는 시간대별로 보고, 구역 카드에서 근거를 확인한 뒤 근무 구역 선택 | 구현 (Supabase 연동)                |
 | 근무 중             | 근무 시간, 광고 슬롯, 청소 전 사진, 이동 경로 기록, 체크인 수, 봉투 수, 긴급 연락                          | 구현 (동의 후 근무 중에만 GPS 기록) |
 | 가게 체크인         | QR 스캔과 가게 반경 50m 확인                                                                               | 구현 (서버에서 거리 판정)           |
 | 근무 종료           | 근무 시간과 예상 수당(시급제), 봉투 수, 봉투 사진, 청소 후 사진, 무게(저울을 썼을 때만) 입력               | 구현                                |
@@ -120,7 +120,7 @@ flowchart LR
    create policy "profiles read own"
      on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
    ```
-   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에, 가게·체크인 테이블과 `check_in` 함수는 `create_shops_checkins`에, 상인 가게 연결과 손님 기록, `shop_report` 함수는 `create_shop_report`에, 사진 Storage 버킷과 권한은 `create_collection_photos`에, 무게 선택 입력은 `collections_weight_optional`에, 청소 전후 사진 경로는 `collections_before_after_photos`에, 상인의 사진 읽기 권한은 `shop_report_before_after_photos`와 `move_shop_photo_check_private`에, GPS 기록 테이블은 `create_track_points`에, QR 랜딩의 스캔·평가와 함수는 `create_qr_landing`에 있습니다.
+   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에, 가게·체크인 테이블과 `check_in` 함수는 `create_shops_checkins`에, 상인 가게 연결과 손님 기록, `shop_report` 함수는 `create_shop_report`에, 사진 Storage 버킷과 권한은 `create_collection_photos`에, 무게 선택 입력은 `collections_weight_optional`에, 청소 전후 사진 경로는 `collections_before_after_photos`에, 상인의 사진 읽기 권한은 `shop_report_before_after_photos`와 `move_shop_photo_check_private`에, GPS 기록 테이블은 `create_track_points`에, QR 랜딩의 스캔·평가와 함수는 `create_qr_landing`에, 구역의 시간대별 추천도 열은 `zones_hourly_scores`에 있습니다.
    Authentication 설정에서 공개 가입을 끄고, Users에서 워커·상인 계정을 만든 뒤 `profiles`에 역할을 넣습니다.
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties
@@ -140,7 +140,6 @@ flowchart LR
 ## 앞으로 할 일
 
 **P1: 기능 보완**
-- [ ] 구역 지도: 시간대별 추천도 칩
 - [ ] 상인 리포트: 광고 노출 시간 (`ad_slots`를 가게·구역과 연결)
 - [ ] 기록 경로로 구역 이탈 비율 계산 (실증 지표 '부정 의심 비율'), 경로 표시
 - [ ] 가게 체크인: 이번 근무 체크인 목록
@@ -156,7 +155,7 @@ flowchart LR
 **완료**
 - [x] 로그인과 역할 구분 (데모 계정, 회원가입 없음)
 - [x] 공공데이터로 구역 추천도 계산(생활인구·가로휴지통·상권 매출) → `zones` 갱신 (`analysis/`)
-- [x] 구역 지도: 범례, 상위 3칸 순위, 이태원역 표시, 구역 카드(인구·휴지통 거리·야간 매출), 공공데이터 출처
+- [x] 구역 지도: 범례, 상위 3칸 순위, 이태원역 표시, 구역 카드(인구·휴지통 거리·야간 매출), 공공데이터 출처, 시간대 칩(평균 / 19–20 … 22–23시)
 - [x] 분석 그림 3장 (`docs/figures/`: 추천도, 야간 인구와 휴지통, 금·토와 평일 시간대별 인구)
 - [x] 근무 중 화면: 근무 시간, 광고 슬롯, 청소 전 사진, 동의 후 GPS 기록, 체크인 수, 봉투 수, 긴급 연락(112·119)
 - [x] 가게 체크인: QR 스캔, 서버에서 가게 50m 판정

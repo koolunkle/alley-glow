@@ -4,7 +4,7 @@
 
 ## 백엔드
 - Supabase(PostgreSQL + PostgREST)를 쓴다.
-- `public.zones(grid_id text pk, name text, score real 0~1, night_pop·weekday_pop·bin_dist_m int, night_sales bigint)`: RLS로 anon/authenticated 읽기만 허용. 이태원역 중심 6×6칸(250m)의 공공데이터 추천도(아래 '공공데이터 분석'). id `G00`~`G35`는 북→남, 서→동 순이라 `grid_id` 정렬이 곧 지도 배치다. 이름은 칸을 덮는 상권 이름(없으면 행정동) + 번호. 지표 열은 구역 카드용(금·토·평일 19~23시 인구, 가장 가까운 휴지통 거리, 21~24시 매출 분기 평균 원).
+- `public.zones(grid_id text pk, name text, score real 0~1, night_pop·weekday_pop·bin_dist_m int, night_sales bigint)`: RLS로 anon/authenticated 읽기만 허용. 이태원역 중심 6×6칸(250m)의 공공데이터 추천도(아래 '공공데이터 분석'). id `G00`~`G35`는 북→남, 서→동 순이라 `grid_id` 정렬이 곧 지도 배치다. 이름은 칸을 덮는 상권 이름(없으면 행정동) + 번호. 지표 열은 구역 카드용(금·토·평일 19~23시 인구, 가장 가까운 휴지통 거리, 21~24시 매출 분기 평균 원). 시간대별 열 `score_by_hour real[4]`, `night_pop_by_hour`·`weekday_pop_by_hour int[4]`(19~20 … 22~23시, 마이그레이션 `zones_hourly_scores`)은 지도 시간대 칩용.
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement)`: 근무 중 광고 슬롯. 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 본인 행만 읽기(`auth.uid()`). 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게. 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).
 - `public.shifts(id uuid pk, worker_id 기본값 auth.uid(), zone_id → zones, started_at, ended_at null 가능)`, `public.collections(shift_id pk → shifts, bags_by_hour smallint[4], weighed, general_kg·recycle_kg·butts_g(weighed=false면 모두 null, check 제약), note, photo_paths text[] 0~3, before_photo_paths·after_photo_paths text[] 각 0~2)`: 근무 종료 때 저장. 워커 역할인 본인만 쓰고 읽는다. 근무 id는 앱이 근무 시작 때 만든 UUID이고, 저장은 `Prefer: resolution=ignore-duplicates`라 재시도해도 중복되지 않는다. 값 상한(봉투 50, kg 500, g 100000)은 DB check와 앱 검증이 같다. 근무 행은 첫 체크인 때 종료 시각 없이 생기고, 근무 종료 때 upsert(`merge-duplicates`)로 종료 시각을 채운다.
@@ -42,7 +42,7 @@
 | 시안 보드 | 앱 화면 | 구현됨 | 남음 |
 |---|---|---|---|
 | (시안 없음) 로그인 | Login | 이메일 로그인, 세션 복원(서버에 닿지 못하면 입력 폼 대신 다시 시도 안내, 세션은 유지), 역할별 첫 화면(워커 → 지도, 상인 → 리포트), 로그아웃 | - |
-| 1. 구역 추천 지도 | ZoneMap | 상단바(계정 아이콘 → 이름(profiles.display_name, 데모 워커는 "이태원 1조")·역할·로그아웃), 36칸 격자 카드(색은 실제 점수 폭으로 펼침, 이태원역 핀(`G20` 고정)은 칸 정중앙, 상위 3칸 순위 숫자는 오른쪽 위, 범례는 칸 모양 견본 5단계, 출처 한 줄 → 누르면 전체), 1위 구역 미리 선택, 구역 카드(추천 순위, 추천 지수 0~100과 ⓘ 누르면 계산 설명, 지표 3칸: 밤 인구와 평일 대비, 가까운 휴지통, 심야 매출) 안의 근무 시작 | 시간대 칩(시간대별 점수 필요) |
+| 1. 구역 추천 지도 | ZoneMap | 상단바(계정 아이콘 → 이름(profiles.display_name, 데모 워커는 "이태원 1조")·역할·로그아웃), 36칸 격자 카드(색은 실제 점수 폭으로 펼침, 이태원역 핀(`G20` 고정)은 칸 정중앙, 상위 3칸 순위 숫자는 오른쪽 위, 범례는 칸 모양 견본 5단계, 출처 한 줄 → 누르면 전체), 1위 구역 미리 선택, 구역 카드(추천 순위, 추천 지수 0~100과 ⓘ 누르면 계산 설명, 지표 3칸: 밤 인구와 평일 대비, 가까운 휴지통, 심야 매출) 안의 근무 시작, 시간대 칩(평균 / 19–20 … 22–23시, 기본 평균, 바꾸면 색·순위·추천 지수·밤 인구가 그 시간 값으로, 고른 구역은 유지, 시간대 값이 없으면 칩 숨김) | 지금 시각에 맞춘 칩 자동 선택 |
 | 2. 근무 중 | Shift | 상태 칩(연두 점, GPS 기록 중 표시)·긴급 연락 칩(112·119 전화 앱 열기), 근무 시간 타이머와 시작 시각·구역 이름(지도에서 넘김), 위치 기록 꺼짐 배너 → 동의 → GPS 기록(알림), 같은 높이 카드 2개: 체크인 수 + QR 체크인(화면 복귀 때 갱신) / 봉투 수 + −1·+1(누른 시각의 시간대로, 근무 종료 폼에 넘김), 광고 카드(지금 광고 연두 라벨 + 다음 광고 한 줄, ad_slots), 청소 전 사진(선택 0~2장), 하단 고정 근무 종료(연두) | 기록 경로 표시·구역 이탈 비율, 긴급 연락에 운영팀 번호 |
 | 3. 가게 체크인 | Checkin | 상단 뒤로 가기 바(`ui/common/SubTopBar`), 들어오면 스캐너 바로 열기(Google Code Scanner), 정확한 위치 권한, 서버 50m 판정, 결과는 모두 같은 틀(중앙보다 조금 위, 큰 원 아이콘 + 제목 + 한 줄 설명: 완료는 연두 원·"체크인 완료" 라벨·가게명 제목·이번 근무 몇 번째 체크인, 거리 초과·모르는 QR·오류는 주황), 성공 뒤 주 버튼은 근무 화면으로·실패 뒤는 다시 스캔(보조 버튼은 회색 글자) | 이번 슬롯 체크인 목록 |
 | 4. 근무 종료·수거량 입력 | Collection | 상단 뒤로 가기 바, 근무 요약 카드(근무 시간, 시급제 예상 수당), 입력 카드(`ui/common/SectionCard`, 필수/선택 칩): 시간대별 봉투 수(근무 중 기록이 기본값, 합계)·채운 봉투 사진(필수 1~3장)·청소 후 사진(선택 0~2장)·무게(선택, 일반·재활용 kg 칸, 하나라도 적으면 저울 사용·빈 칸은 0, 둘 다 비우면 저울 없음)·특이사항, 하단 고정 근무 종료하기, shifts·collections·Storage 저장, 입력 중인 폼은 저장 상태(`SavedStateHandle`)에 보관(카메라를 띄운 사이 프로세스가 재생성돼도 유지), 봉투 0장이면 다른 검증 통과 뒤 확인 대화상자(그대로 저장 / 봉투 수 고치기) | - |
@@ -83,6 +83,7 @@
 - 스크립트 `analysis/`(파이썬 표준 라이브러리만): `geo.py`(GRS80 횡메르카토르 변환, xlsx·shapefile 읽기, `python analysis/geo.py`로 자체 점검), `geocode_bins.py`(휴지통 주소 → 좌표, 카카오 로컬 API, 키는 `local.properties`의 `kakao.key`), `zones.py`(추천도 → `data/zones_itaewon.csv`, 시간대별 36칸 인구 합계 → `data/pop_hourly_itaewon.csv`), `figures.py`(분석 그림 3장 → `docs/figures/`, Pillow + 맑은 고딕, 밝은 배경, 출처 문구 포함).
 - 원본은 `data/raw/`(git 제외: 생활인구 원본 재배포 금지, 카카오 변환 결과 저장 약관 불확실). 칸별 합계인 `data/zones_itaewon.csv`만 올린다.
 - 원본: 서울 생활인구 250m 격자(OA-22784, 일별 `250_LOCAL_RESD_YYYYMMDD`, CP949, 격자 id는 국가지점번호라 경계 파일 없이 UTM-K 좌표 계산), 가로쓰레기통 설치정보(OA-15069, 202511, 주소만), 상권 추정매출(OA-15572, 2025년), 상권 영역(OA-15560, shapefile, EPSG:5181).
+- 시간대별 추천도(`score_19`~`score_22`): 야간 인구만 그 한 시간의 금·토 평균으로 바꿔 같은 식·같은 정규화로 계산(휴지통·매출은 시간 구분 없음). 값은 CSV에서 SQL로 `zones`에 넣는다.
 - 지표: 야간 인구 = 금·토(11/13·14) 19~23시 평균, 휴지통 공백 = 칸 중심에서 가장 가까운 휴지통까지 거리, 야간 매출 = 21~24시 매출(분기 평균)을 상권 영역과 겹친 면적 비율로 나눔. 36칸 안에서 최소-최대 정규화.
 - 용산구 휴지통 359개 중 354개 변환(실패 5개는 한강로·청파동, 분석 범위 밖), 범위 안 95개. 이웃 구 휴지통은 넣지 않았다(36칸 모두 용산구).
 - 휴지통 공백이 가산이라 인구가 거의 없는 칸(용산공원 G30 등)도 점수를 받는다. 가중치와 함께 가정으로 밝힌다.
