@@ -83,7 +83,8 @@ private fun LargePhoto(path: String?, label: String, loadPhoto: suspend (String)
         Box(
             Modifier
                 .fillMaxWidth()
-                .aspectRatio(3f / 4f)
+                // 받은 사진 비율대로(가로 사진이면 전·후 두 장이 한 화면에), 받기 전엔 세로 3:4 자리
+                .aspectRatio(image?.let { it.width.toFloat() / it.height } ?: (3f / 4f))
                 .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
