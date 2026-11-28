@@ -157,12 +157,26 @@
     $('status').classList.add('warn');
   }
 
+  // 브라우저마다 무작위 id(개인정보 아님). 같은 기기가 30분 안에 다시 열면 서버가 같은 스캔을 돌려줘 새로고침으로 스캔·평가가 늘지 않음
+  function clientId() {
+    try {
+      let id = localStorage.getItem('alley-glow-client');
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem('alley-glow-client', id);
+      }
+      return id;
+    } catch (e) {
+      return null; // 저장소를 막았거나 https가 아니면 예전처럼 매번 새 스캔
+    }
+  }
+
   async function load() {
     const code = new URLSearchParams(location.search).get('s');
     if (!code || typeof SUPABASE_URL === 'undefined') return fail('가게 QR을 다시 스캔해 주세요.');
     let shop;
     try {
-      shop = await rpc('qr_visit', { p_code: code });
+      shop = await rpc('qr_visit', { p_code: code, p_client: clientId() });
     } catch (e) {
       return fail('정보를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.');
     }
