@@ -120,7 +120,7 @@ flowchart LR
    create policy "profiles read own"
      on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
    ```
-   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에, 가게·체크인 테이블과 `check_in` 함수는 `create_shops_checkins`에, 상인 가게 연결과 손님 기록, `shop_report` 함수는 `create_shop_report`에, 사진 Storage 버킷과 권한은 `create_collection_photos`에, 무게 선택 입력은 `collections_weight_optional`에, 청소 전후 사진 경로는 `collections_before_after_photos`에, 상인의 사진 읽기 권한은 `shop_report_before_after_photos`와 `move_shop_photo_check_private`에, GPS 기록 테이블은 `create_track_points`에, QR 랜딩의 스캔·평가와 함수는 `create_qr_landing`에, 구역의 시간대별 추천도 열은 `zones_hourly_scores`에, 칸 중심 좌표와 구역 안 GPS 기록 비율 함수는 `shift_zone_share`에 있습니다.
+   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에, 가게·체크인 테이블과 `check_in` 함수는 `create_shops_checkins`에, 상인 가게 연결과 손님 기록, `shop_report` 함수는 `create_shop_report`에, 사진 Storage 버킷과 권한은 `create_collection_photos`에, 무게 선택 입력은 `collections_weight_optional`에, 청소 전후 사진 경로는 `collections_before_after_photos`에, 상인의 사진 읽기 권한은 `shop_report_before_after_photos`와 `move_shop_photo_check_private`에, GPS 기록 테이블은 `create_track_points`에, QR 랜딩의 스캔·평가와 함수는 `create_qr_landing`에, 구역의 시간대별 추천도 열은 `zones_hourly_scores`에, 칸 중심 좌표와 구역 안 GPS 기록 비율 함수는 `shift_zone_share`에, 광고 슬롯의 가게 연결과 리포트의 광고 노출 시간은 `ad_slots_shop_ad_minutes`에 있습니다.
    Authentication 설정에서 공개 가입을 끄고, Users에서 워커·상인 계정을 만든 뒤 `profiles`에 역할을 넣습니다.
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties
@@ -140,7 +140,6 @@ flowchart LR
 ## 앞으로 할 일
 
 **P1: 기능 보완**
-- [ ] 상인 리포트: 광고 노출 시간 (`ad_slots`를 가게·구역과 연결)
 - [ ] 근무 기록 경로 표시 (구역 이탈 비율은 근무 종료 화면에 표시함)
 
 **P2: 운영과 정리**
@@ -157,7 +156,7 @@ flowchart LR
 - [x] 근무 중 화면: 근무 시간, 광고 슬롯, 청소 전 사진, 동의 후 GPS 기록, 체크인 수와 체크인한 가게 목록, 봉투 수, 긴급 연락(112·119)
 - [x] 가게 체크인: QR 스캔, 서버에서 가게 50m 판정
 - [x] 근무 종료: 근무 시간·예상 수당(시급제), 봉투 수, 봉투 사진, 청소 후 사진, 무게(저울을 썼을 때만), 저장, 앱이 다시 만들어져도 입력 유지, 봉투 0장 확인, 구역 안 GPS 기록 비율
-- [x] 상인 리포트: 청소한 밤, 채운 봉투 수, QR 스캔 수, 거리 청결도, 광고 보고 온 손님 +1, 최근 청소 기록과 전후 사진(눌러서 크게 보기)
+- [x] 상인 리포트: 청소한 밤, 채운 봉투 수, QR 스캔 수, 거리 청결도, 광고 노출 시간, 광고 보고 온 손님 +1, 최근 청소 기록과 전후 사진(눌러서 크게 보기)
 - [x] QR 랜딩 웹(시민용, GitHub Pages), 가게별 인쇄용 QR 페이지
 - [x] GitHub Actions 최신 버전 사용 (Node 20 지원 종료 경고 해소)
 - [x] 서명한 release APK와 내려받기 링크, README 스크린샷 (앱 5개 화면 + QR 랜딩)
