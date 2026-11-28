@@ -4,6 +4,7 @@
 
 ## 백엔드
 - Supabase(PostgreSQL + PostgREST)를 쓴다.
+- 스키마 변경은 Supabase MCP `apply_migration`으로 적용하고, 같은 SQL을 `supabase/migrations/{버전}_{이름}.sql`에도 둔다(DB의 `supabase_migrations.schema_migrations`와 같은 내용, 저장소가 공개라 계정·키 같은 값은 넣지 않는다). 데이터만 바꾸는 SQL(구역 값 채우기, 예시 데이터)은 마이그레이션에 넣지 않는다.
 - `public.zones(grid_id text pk, name text, score real 0~1, night_pop·weekday_pop·bin_dist_m int, night_sales bigint)`: RLS로 anon/authenticated 읽기만 허용. 이태원역 중심 6×6칸(250m)의 공공데이터 추천도(아래 '공공데이터 분석'). id `G00`~`G35`는 북→남, 서→동 순이라 `grid_id` 정렬이 곧 지도 배치다. 이름은 칸을 덮는 상권 이름(없으면 행정동) + 번호. 지표 열은 구역 카드용(금·토·평일 19~23시 인구, 가장 가까운 휴지통 거리, 21~24시 매출 분기 평균 원). 시간대별 열 `score_by_hour real[4]`, `night_pop_by_hour`·`weekday_pop_by_hour int[4]`(19~20 … 22~23시, 마이그레이션 `zones_hourly_scores`)은 지도 시간대 칩용. 칸 중심 좌표 `lat`·`lng`(마이그레이션 `shift_zone_share`, 경계는 중심 ±125m).
 - `public.ad_slots(id, shop_name, start_hour, end_hour, placement, shop_id → shops)`: 근무 중 광고 슬롯(`shop_id`는 마이그레이션 `ad_slots_shop_ad_minutes`, 예시 행은 같은 이름의 가게에 연결). 자정 이후 시각은 24~30. 읽기 전용 RLS, 전 구역 공통. 지금은 `[가게명 N]` 예시 5행(19~24시)이다.
 - `public.profiles(user_id uuid pk → auth.users, role 'worker'|'shop', display_name, shop_id → shops)`: 본인 행만 읽기(`auth.uid()`). 상인만 shop_id가 있다(check 제약). 데모 상인은 `NC-SHOP-001` 가게. 계정은 관리자가 대시보드에서 만들고 역할을 이 테이블에 넣는다. 공개 가입은 꺼 두었다. 데모 계정은 워커 1, 상인 1(이메일은 `CLAUDE.local.md`).

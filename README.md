@@ -87,8 +87,7 @@ flowchart LR
 ## 실행 방법
 
 1. Android Studio에서 프로젝트를 엽니다. (compileSdk 37, minSdk 24)
-2. Supabase 프로젝트를 만들고 스키마를 적용합니다. 테이블·RLS·함수·Storage 정책은 Supabase 마이그레이션으로만 관리하고 있고 저장소에는 SQL 파일이 없습니다. 적용 순서는 아래와 같고, 각 테이블과 함수의 역할은 `CLAUDE.md`의 '백엔드'에 정리돼 있습니다.
-   `create_zones` → `create_ad_slots` → `create_profiles` → `create_shifts_collections` → `index_shifts_fks` → `create_shops_checkins` → `create_shop_report` → `create_collection_photos` → `collections_weight_optional` → `collections_before_after_photos` → `shop_report_before_after_photos` → `move_shop_photo_check_private` → `create_track_points` → `create_qr_landing` → `shop_report_qr_scans` → `zones_indicators` → `shop_report_collected_bags` → `zones_hourly_scores` → `shift_zone_share` → `ad_slots_shop_ad_minutes` → `qr_visit_client_dedupe`
+2. Supabase 프로젝트를 만들고 `supabase/migrations/`의 SQL을 파일 이름(시각) 순서대로 SQL Editor에서 실행합니다. 테이블, RLS, 함수, Storage 버킷·정책이 만들어지고, 자리표시 구역 36칸·예시 가게 5곳·광고 슬롯 5개도 함께 들어갑니다. 구역의 실제 지표와 시간대별 값은 `analysis/zones.py` 결과(`data/zones_itaewon.csv`)로 따로 넣고, 시연용 근무·체크인·사진 같은 예시 데이터는 마이그레이션에 없습니다.
    Authentication 설정에서 공개 가입을 끄고, Users에서 워커·상인 계정을 만든 뒤 `profiles`에 역할을 넣습니다.
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties
