@@ -40,10 +40,10 @@
 |---------------------|------------------------------------------------------------------------------------------------------------|-------------------------------------|
 | 로그인              | 운영자가 발급한 계정으로 로그인, 워커·상인 역할별 첫 화면                                                  | 구현 (Supabase Auth)                |
 | 구역 지도           | 250m 격자별 배치 추천도(공공데이터)를 평균 또는 시간대별로 보고, 구역 카드에서 근거를 확인한 뒤 근무 구역 선택 | 구현 (Supabase 연동)                |
-| 근무 중             | 근무 시간, 광고 슬롯, 청소 전 사진, 이동 경로 기록, 체크인 수, 봉투 수, 긴급 연락                          | 구현 (동의 후 근무 중에만 GPS 기록) |
+| 근무 중             | 근무 시간, 광고 슬롯, 청소 전 사진, 이동 경로 기록, 체크인 수와 체크인한 가게, 봉투 수, 긴급 연락          | 구현 (동의 후 근무 중에만 GPS 기록) |
 | 가게 체크인         | QR 스캔과 가게 반경 50m 확인                                                                               | 구현 (서버에서 거리 판정)           |
-| 근무 종료           | 근무 시간과 예상 수당(시급제), 봉투 수, 봉투 사진, 청소 후 사진, 무게(저울을 썼을 때만) 입력               | 구현                                |
-| 상인 리포트         | 가게별 월간 지표(청소한 밤, 채운 봉투 수, QR 스캔 수, 거리 청결도), 광고 보고 온 손님 기록, 청소 전후 사진 | 일부 구현 (광고 노출 시간 제외)     |
+| 근무 종료           | 근무 시간과 예상 수당(시급제), 구역 안 기록 비율과 근무 경로, 봉투 수, 봉투·청소 후 사진, 무게(선택) 입력 | 구현                                |
+| 상인 리포트         | 가게별 월간 지표(청소한 밤, 채운 봉투 수, QR 스캔 수, 거리 청결도, 광고 노출 시간), 광고 보고 온 손님 기록, 청소 전후 사진 | 구현                                |
 | QR 랜딩 (시민용 웹) | 홍보물 QR로 들어온 시민에게 가게 안내, 혜택, 청결도 평가                                                   | 구현 (`web/`, GitHub Pages)         |
 
 ## 구조
@@ -79,48 +79,16 @@ flowchart LR
 | UI | Jetpack Compose, Material 3 | 야간 사용을 위한 다크 테마 하나만 둠 |
 | 화면 이동 | Navigation Compose (type-safe) | 화면 인자를 컴파일 시점에 검사 |
 | 의존성 주입 | Hilt + KSP | ViewModel과 Repository 연결을 표준 방식으로 처리 |
-| 네트워크 | Ktor Client (OkHttp), kotlinx-serialization | 나중에 붙일 공식 Supabase Kotlin 클라이언트(supabase-kt)도 Ktor 기반 |
+| 네트워크 | Ktor Client (OkHttp), kotlinx-serialization | 인증에 쓰는 supabase-kt도 Ktor 기반이라 HTTP 엔진을 함께 씀 |
 | 인증 | Supabase Auth (supabase-kt) | 세션 저장과 토큰 갱신을 라이브러리에 맡김 |
 | 백엔드 | Supabase (PostgreSQL, RLS) | 별도 서버 없이 테이블 단위로 읽기·쓰기 권한 관리 |
-| 테스트 | JUnit, kotlinx-coroutines-test | ViewModel 상태 변화 검증 |
+| 테스트 | JUnit, kotlinx-coroutines-test | ViewModel 상태 변화와 도메인 계산(시간대 칸, 거리, 수당) 검증 |
 
 ## 실행 방법
 
 1. Android Studio에서 프로젝트를 엽니다. (compileSdk 37, minSdk 24)
-2. Supabase 프로젝트에 `zones`, `ad_slots` 테이블을 만듭니다. 둘 다 읽기만 허용합니다.
-   ```sql
-   create table public.zones (
-     grid_id text primary key,
-     name text not null,
-     score real not null check (score between 0 and 1)
-   );
-   alter table public.zones enable row level security;
-   create policy "zones are readable by everyone"
-     on public.zones for select to anon, authenticated using (true);
-
-   -- 근무 중 광고 슬롯. 자정 이후 시각은 24~30으로 적습니다
-   create table public.ad_slots (
-     id bigint generated always as identity primary key,
-     shop_name text not null,
-     start_hour smallint not null check (start_hour between 0 and 29),
-     end_hour smallint not null check (end_hour between 1 and 30 and end_hour > start_hour),
-     placement text not null
-   );
-   alter table public.ad_slots enable row level security;
-   create policy "ad_slots read"
-     on public.ad_slots for select to anon, authenticated using (true);
-
-   -- 사용자 역할. 회원가입 없이 대시보드에서 계정을 만들고 여기에 역할을 넣습니다
-   create table public.profiles (
-     user_id uuid primary key references auth.users (id) on delete cascade,
-     role text not null check (role in ('worker', 'shop')),
-     display_name text not null
-   );
-   alter table public.profiles enable row level security;
-   create policy "profiles read own"
-     on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
-   ```
-   근무 기록 테이블(`shifts`, `collections`)과 워커 본인만 쓰는 RLS는 Supabase 마이그레이션 `create_shifts_collections`에, 가게·체크인 테이블과 `check_in` 함수는 `create_shops_checkins`에, 상인 가게 연결과 손님 기록, `shop_report` 함수는 `create_shop_report`에, 사진 Storage 버킷과 권한은 `create_collection_photos`에, 무게 선택 입력은 `collections_weight_optional`에, 청소 전후 사진 경로는 `collections_before_after_photos`에, 상인의 사진 읽기 권한은 `shop_report_before_after_photos`와 `move_shop_photo_check_private`에, GPS 기록 테이블은 `create_track_points`에, QR 랜딩의 스캔·평가와 함수는 `create_qr_landing`에, 구역의 시간대별 추천도 열은 `zones_hourly_scores`에, 칸 중심 좌표와 구역 안 GPS 기록 비율 함수는 `shift_zone_share`에, 광고 슬롯의 가게 연결과 리포트의 광고 노출 시간은 `ad_slots_shop_ad_minutes`에, QR 랜딩의 같은 기기 재방문 처리는 `qr_visit_client_dedupe`에 있습니다.
+2. Supabase 프로젝트를 만들고 스키마를 적용합니다. 테이블·RLS·함수·Storage 정책은 Supabase 마이그레이션으로만 관리하고 있고 저장소에는 SQL 파일이 없습니다. 적용 순서는 아래와 같고, 각 테이블과 함수의 역할은 `CLAUDE.md`의 '백엔드'에 정리돼 있습니다.
+   `create_zones` → `create_ad_slots` → `create_profiles` → `create_shifts_collections` → `index_shifts_fks` → `create_shops_checkins` → `create_shop_report` → `create_collection_photos` → `collections_weight_optional` → `collections_before_after_photos` → `shop_report_before_after_photos` → `move_shop_photo_check_private` → `create_track_points` → `create_qr_landing` → `shop_report_qr_scans` → `zones_indicators` → `shop_report_collected_bags` → `zones_hourly_scores` → `shift_zone_share` → `ad_slots_shop_ad_minutes` → `qr_visit_client_dedupe`
    Authentication 설정에서 공개 가입을 끄고, Users에서 워커·상인 계정을 만든 뒤 `profiles`에 역할을 넣습니다.
 3. 루트의 `local.properties`에 접속 정보를 추가합니다. 이 파일은 git에 올라가지 않습니다.
    ```properties

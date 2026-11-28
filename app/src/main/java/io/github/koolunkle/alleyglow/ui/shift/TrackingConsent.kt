@@ -21,7 +21,7 @@ import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
 import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 
-/** 위치 수집 동의(메모: 근무 중에만 수집, 동의 화면 1개). 근무마다 눌러야 기록이 시작됨 */
+/** 위치 수집 동의(근무 중에만 수집, 동의 화면은 이것 하나). 근무마다 눌러야 기록이 시작됨 */
 @Composable
 internal fun TrackingConsent(permissionDenied: Boolean, onStart: () -> Unit) {
     Column(

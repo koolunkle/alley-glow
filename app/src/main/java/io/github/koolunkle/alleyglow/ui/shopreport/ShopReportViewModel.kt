@@ -32,7 +32,7 @@ class ShopReportViewModel @Inject constructor(
         }
     }
 
-    /** 화면 복귀 때 조용히 새로 받음(시연 중 워커 체크인 반영). 실패하면 지금 화면 유지 */
+    /** 화면 복귀 때 조용히 새로 받음(그사이 워커 체크인 반영). 실패하면 지금 화면 유지 */
     fun refresh() {
         if (_uiState.value !is ShopReportUiState.Success) return
         viewModelScope.launch {
