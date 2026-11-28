@@ -1,7 +1,9 @@
 package io.github.koolunkle.alleyglow.ui.collection
 
 import androidx.lifecycle.SavedStateHandle
+import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 import io.github.koolunkle.alleyglow.domain.model.ShiftRecord
+import io.github.koolunkle.alleyglow.domain.model.ShiftTrack
 import io.github.koolunkle.alleyglow.domain.model.Weight
 import io.github.koolunkle.alleyglow.domain.model.ZoneShare
 import io.github.koolunkle.alleyglow.domain.repository.ShiftRepository
@@ -24,7 +26,9 @@ class CollectionViewModelTest {
     private class FakeShifts(
         val result: Result<Unit> = Result.success(Unit),
         val share: Result<ZoneShare?> = Result.success(null),
+        val track: Result<ShiftTrack?> = Result.success(null),
     ) : ShiftRepository {
+        override suspend fun getTrack(shiftId: String, zoneId: String) = track
         var saved: ShiftRecord? = null
         override suspend fun getZoneShare(shiftId: String) = share
         override suspend fun finishShift(record: ShiftRecord): Result<Unit> {
@@ -69,6 +73,13 @@ class CollectionViewModelTest {
     fun `구역 안 GPS 기록 비율을 받고 못 받으면 숨긴다`() {
         assertEquals(91, viewModel(FakeShifts(share = Result.success(ZoneShare(total = 44, inside = 40)))).zoneShare.value?.percent)
         assertNull(viewModel(FakeShifts(share = Result.failure(IllegalStateException()))).zoneShare.value)
+    }
+
+    @Test
+    fun `근무 경로를 받고 못 받으면 숨긴다`() {
+        val track = ShiftTrack(GeoPoint(37.5, 127.0), listOf(GeoPoint(37.5, 127.0)))
+        assertEquals(track, viewModel(FakeShifts(track = Result.success(track))).track.value)
+        assertNull(viewModel(FakeShifts(track = Result.failure(IllegalStateException()))).track.value)
     }
 
     @Test

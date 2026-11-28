@@ -1,6 +1,7 @@
 package io.github.koolunkle.alleyglow.data.remote
 
 import io.github.koolunkle.alleyglow.data.remote.dto.CollectionDto
+import io.github.koolunkle.alleyglow.data.remote.dto.LatLngDto
 import io.github.koolunkle.alleyglow.data.remote.dto.ShiftDto
 import io.github.koolunkle.alleyglow.data.remote.dto.ShiftStartDto
 import io.github.koolunkle.alleyglow.data.remote.dto.TrackPointDto
@@ -34,6 +35,19 @@ class ShiftRemoteDataSource @Inject constructor(
     suspend fun fetchZoneShare(shiftId: String): ZoneShareDto? = client.get("rpc/shift_zone_share") {
         parameter("p_shift_id", shiftId)
     }.body<List<ZoneShareDto>>().firstOrNull()
+
+    /** 근무 GPS 기록(기록 순). RLS로 본인 근무만 */
+    // shortcut: PostgREST 기본 최대 1000행(30초 간격이면 8시간), 더 긴 근무가 생기면 Range로 나눠 받음
+    suspend fun fetchTrack(shiftId: String): List<LatLngDto> = client.get("track_points") {
+        parameter("select", "lat,lng")
+        parameter("shift_id", "eq.$shiftId")
+        parameter("order", "recorded_at")
+    }.body()
+
+    suspend fun fetchZoneCenter(zoneId: String): LatLngDto? = client.get("zones") {
+        parameter("select", "lat,lng")
+        parameter("grid_id", "eq.$zoneId")
+    }.body<List<LatLngDto>>().firstOrNull()
 
     private suspend inline fun <reified T : Any> insert(table: String, row: T, onConflict: String) {
         client.post(table) {

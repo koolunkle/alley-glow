@@ -1,9 +1,20 @@
 package io.github.koolunkle.alleyglow.domain.model
 
+import kotlin.math.cos
+
 /** 근무 GPS 기록 중 배정 구역 칸(중심 ±125m) 안에 든 수 */
 data class ZoneShare(val total: Int, val inside: Int) {
     val percent: Int get() = Math.round(inside * 100f / total)
 }
+
+/** 근무 GPS 경로(기록 순)와 배정 구역 칸 중심 */
+data class ShiftTrack(val zoneCenter: GeoPoint, val points: List<GeoPoint>)
+
+/** center에서 동쪽·북쪽으로 떨어진 거리(m). 수 km 안이라 평면 근사로 충분 */
+fun GeoPoint.metersFrom(center: GeoPoint): Pair<Double, Double> =
+    (lng - center.lng) * METERS_PER_DEGREE * cos(Math.toRadians(center.lat)) to (lat - center.lat) * METERS_PER_DEGREE
+
+private const val METERS_PER_DEGREE = 111_320.0
 
 /** 근무 1회와 근무 종료 때 입력한 수거량 */
 data class ShiftRecord(

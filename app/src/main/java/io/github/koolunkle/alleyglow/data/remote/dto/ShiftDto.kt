@@ -72,6 +72,10 @@ fun ShiftRecord.toCollectionDto(photoPaths: List<String>, beforePhotoPaths: List
     afterPhotoPaths = afterPhotoPaths,
 )
 
+/** `track_points`·`zones`의 좌표만 고른 행 */
+@Serializable
+data class LatLngDto(val lat: Double, val lng: Double)
+
 /** `rpc/shift_zone_share` 결과 행 */
 @Serializable
 data class ZoneShareDto(val total: Int, val inside: Int)

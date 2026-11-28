@@ -112,6 +112,9 @@
     <string name="collection_worked_value">%1$d시간 %2$d분</string>
     <string name="collection_wage">예상 수당</string>
     <string name="collection_wage_basis">시급 %1$s · 분 단위</string>
+    <string name="collection_track">근무 경로</string>
+    <string name="collection_track_caption">가운데 칸이 배정 구역 · 한 칸 250m · 점이 마지막 위치</string>
+    <string name="collection_track_outside"> · 범위 밖 기록 %1$d개</string>
     <string name="collection_zone_share">구역 안 기록</string>
     <string name="collection_zone_share_caption">GPS 기록 %1$d회 중 %2$d회</string>
     <string name="collection_zone_share_value">%1$d%%</string>

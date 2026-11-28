@@ -42,10 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.R
+import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 import io.github.koolunkle.alleyglow.domain.model.HOURLY_WAGE_WON
 import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.MAX_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
+import io.github.koolunkle.alleyglow.domain.model.ShiftTrack
 import io.github.koolunkle.alleyglow.domain.model.ZoneShare
 import io.github.koolunkle.alleyglow.domain.model.estimateWage
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
@@ -65,6 +67,7 @@ fun CollectionRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val zoneShare by viewModel.zoneShare.collectAsStateWithLifecycle()
+    val track by viewModel.track.collectAsStateWithLifecycle()
     LaunchedEffect(uiState) {
         if (uiState is CollectionUiState.Submitted) onSubmitted()
     }
@@ -73,6 +76,7 @@ fun CollectionRoute(
             uiState = editing,
             workedMinutes = (viewModel.endedAt - viewModel.startedAt) / 60_000,
             zoneShare = zoneShare,
+            track = track,
             beforePhotoCount = viewModel.beforePhotos.size,
             onBack = onBack,
             onChangeBags = viewModel::changeBags,
@@ -95,6 +99,7 @@ fun CollectionScreen(
     uiState: CollectionUiState.Editing,
     workedMinutes: Long,
     zoneShare: ZoneShare?,
+    track: ShiftTrack?,
     /** 근무 화면에서 찍은 청소 전 사진 수(후 사진 안내용) */
     beforePhotoCount: Int,
     onBack: () -> Unit,
@@ -162,6 +167,7 @@ fun CollectionScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             WorkSummary(workedMinutes, zoneShare)
+            track?.let { TrackCard(it) }
 
             SectionCard(stringResource(R.string.collection_bags), required = true, hint = stringResource(R.string.collection_bags_hint)) {
                 NIGHT_SLOT_HOURS.forEachIndexed { slot, hour ->
@@ -319,6 +325,10 @@ private fun CollectionScreenPreview() {
             ),
             workedMinutes = 232,
             zoneShare = ZoneShare(total = 48, inside = 44),
+            track = ShiftTrack(
+                GeoPoint(37.5336, 126.9921),
+                List(40) { GeoPoint(37.5336 + 0.0008 * kotlin.math.sin(it / 6.0), 126.9921 + 0.00002 * it * it / 10) },
+            ),
             beforePhotoCount = 1,
             onBack = {},
             onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {},
