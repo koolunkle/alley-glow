@@ -157,6 +157,9 @@
     <string name="report_clean">거리 청결도</string>
     <string name="report_clean_value">%1$s점</string>
     <string name="report_clean_caption">시민 평가 평균 · 5점 만점</string>
+    <string name="report_ad">광고 노출 시간</string>
+    <string name="report_ad_value">%1$d시간 %2$d분</string>
+    <string name="report_ad_caption">근무 중 우리 가게 광고를 단 시간 · 근무자 합계</string>
     <string name="report_guests">광고 보고 온 손님</string>
     <string name="report_guests_value">%1$d명</string>
     <string name="report_guests_caption">“클린 워커 보고 왔어요”라고 하면 눌러 주세요</string>

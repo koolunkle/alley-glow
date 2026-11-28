@@ -13,6 +13,8 @@ data class ShopReport(
     val qrScans: Int = 0,
     /** 랜딩의 청결도 평가 평균(1~5). 평가가 없으면 null */
     val cleanScore: Double? = null,
+    /** 이번 달 근무 시간과 이 가게 광고 슬롯이 겹친 시간(분, 근무자 기준) */
+    val adMinutes: Int = 0,
     /** 최근 밤부터 최대 5개 */
     val recent: List<NightRecord>,
 )

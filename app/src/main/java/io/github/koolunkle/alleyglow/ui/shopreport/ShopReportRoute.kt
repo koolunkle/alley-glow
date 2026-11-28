@@ -126,6 +126,13 @@ private fun Report(uiState: ShopReportUiState.Success, onAddGuest: () -> Unit, l
             stringResource(R.string.report_clean_caption),
         )
     }
+    Row {
+        Metric(
+            stringResource(R.string.report_ad),
+            stringResource(R.string.report_ad_value, report.adMinutes / 60, report.adMinutes % 60),
+            stringResource(R.string.report_ad_caption),
+        )
+    }
     GuestCard(report.guests, uiState.isAddingGuest, uiState.guestFailed, onAddGuest)
     RecentNights(report.recent, loadPhoto)
 }
@@ -256,7 +263,7 @@ private fun ShopReportScreenPreview() {
             uiState = ShopReportUiState.Success(
                 ShopReport(
                     shopId = 1, shopName = "[가게명]", month = 11, nights = 4, collectedBags = 24, guests = 7,
-                    qrScans = 23, cleanScore = 4.2,
+                    qrScans = 23, cleanScore = 4.2, adMinutes = 240,
                     recent = listOf(
                         NightRecord("2026-11-29", 3, "19:12", "22:40", beforePhoto = "b", afterPhoto = "a"),
                         NightRecord("2026-11-28", 2, "20:05", "21:30"),
