@@ -102,5 +102,6 @@
 - `./gradlew.bat assembleDebug testDebugUnitTest`
 - 기기 설치: `./gradlew.bat installDebug`
 - 배포 APK: `./gradlew.bat assembleRelease` → `app/build/outputs/apk/release/app-release.apk`. 서명은 `local.properties`의 `release.storeFile`·`release.storePassword`(별칭 `nightclean`, 키스토어는 저장소 밖 `~/.android/`, 분실하면 같은 앱으로 업데이트 불가). R8은 꺼 둠(켜면 시작 즉시 `IllegalAccessError`, 다시 켤 때 `src/main/keepRules/`에 keep 규칙을 둔다). GitHub Release에 `alley-glow.apk` 이름으로 올리면 README 링크(`releases/latest/download/alley-glow.apk`)가 최신을 가리킨다. debug와 서명이 달라 기기에서 바꿔 설치하려면 먼저 지워야 한다(로그인 풀림).
+- Release는 기기에서 확인한 기능이 몇 개 모였을 때나 바로 필요한 버그 수정이 있을 때만 올린다(받는 사람이 사실상 본인뿐이고 빌드가 오래 걸림). 평소에는 커밋·푸시만 하고 기기 확인은 직접 설치로 한다. 리팩토링만 있으면 올리지 않는다. 올릴 때는 버전 커밋(`feat: 앱 버전 x.y(versionCode n)`) → clean 빌드·테스트(오래 걸리면 백그라운드) → 푸시 → `gh release create vX.Y`에 `alley-glow.apk` → README 링크로 받아 버전 확인.
 - 실행: `adb shell am start -n io.github.koolunkle.alleyglow/.MainActivity`
 - 개인 링크, Supabase 프로젝트 id, 기기 정보는 `CLAUDE.local.md`(git 제외)에 둔다.
