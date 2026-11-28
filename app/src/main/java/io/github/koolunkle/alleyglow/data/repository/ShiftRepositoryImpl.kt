@@ -7,7 +7,6 @@ import io.github.koolunkle.alleyglow.data.remote.dto.toShiftDto
 import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 import io.github.koolunkle.alleyglow.domain.model.ShiftRecord
 import io.github.koolunkle.alleyglow.domain.model.ShiftTrack
-import io.github.koolunkle.alleyglow.domain.model.ZoneShare
 import io.github.koolunkle.alleyglow.domain.repository.ShiftRepository
 import javax.inject.Inject
 
@@ -29,10 +28,6 @@ class ShiftRepositoryImpl @Inject constructor(
             afterPhotoPaths = upload(record.afterPhotos, "after"),
         )
         remote.insertCollection(collection)
-    }
-
-    override suspend fun getZoneShare(shiftId: String): Result<ZoneShare?> = result {
-        remote.fetchZoneShare(shiftId)?.takeIf { it.total > 0 }?.let { ZoneShare(it.total, it.inside) }
     }
 
     override suspend fun getTrack(shiftId: String, zoneId: String): Result<ShiftTrack?> = result {

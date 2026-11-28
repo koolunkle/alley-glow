@@ -21,15 +21,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.alleyglow.R
+import io.github.koolunkle.alleyglow.domain.model.CELL_HALF_M
 import io.github.koolunkle.alleyglow.domain.model.ShiftTrack
 import io.github.koolunkle.alleyglow.domain.model.metersFrom
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
 import io.github.koolunkle.alleyglow.ui.theme.cardSurface
 import kotlin.math.abs
 
-// 배정 칸(한 변 250m)과 둘레 한 칸씩, 3×3칸
-private const val CELL_HALF_M = 125.0
-private const val VIEW_HALF_M = 375.0
+// 배정 칸과 둘레 한 칸씩, 3×3칸
+private const val VIEW_HALF_M = 3 * CELL_HALF_M
 
 /** 배정 구역 칸을 가운데 둔 3×3칸 위에 GPS 기록을 순서대로 이은 선. 범위 밖 기록은 개수만 */
 @Composable

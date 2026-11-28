@@ -66,7 +66,6 @@ fun CollectionRoute(
     viewModel: CollectionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val zoneShare by viewModel.zoneShare.collectAsStateWithLifecycle()
     val track by viewModel.track.collectAsStateWithLifecycle()
     LaunchedEffect(uiState) {
         if (uiState is CollectionUiState.Submitted) onSubmitted()
@@ -75,7 +74,6 @@ fun CollectionRoute(
         CollectionScreen(
             uiState = editing,
             workedMinutes = (viewModel.endedAt - viewModel.startedAt) / 60_000,
-            zoneShare = zoneShare,
             track = track,
             beforePhotoCount = viewModel.beforePhotos.size,
             onBack = onBack,
@@ -98,7 +96,6 @@ fun CollectionRoute(
 fun CollectionScreen(
     uiState: CollectionUiState.Editing,
     workedMinutes: Long,
-    zoneShare: ZoneShare?,
     track: ShiftTrack?,
     /** 근무 화면에서 찍은 청소 전 사진 수(후 사진 안내용) */
     beforePhotoCount: Int,
@@ -166,7 +163,7 @@ fun CollectionScreen(
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            WorkSummary(workedMinutes, zoneShare)
+            WorkSummary(workedMinutes, track?.zoneShare())
             track?.let { TrackCard(it) }
 
             SectionCard(stringResource(R.string.collection_bags), required = true, hint = stringResource(R.string.collection_bags_hint)) {
@@ -324,7 +321,6 @@ private fun CollectionScreenPreview() {
                 form = CollectionForm(bags = listOf(1, 2, 1, 0), generalKg = "12.5", recycleKg = "3"),
             ),
             workedMinutes = 232,
-            zoneShare = ZoneShare(total = 48, inside = 44),
             track = ShiftTrack(
                 GeoPoint(37.5336, 126.9921),
                 List(40) { GeoPoint(37.5336 + 0.0008 * kotlin.math.sin(it / 6.0), 126.9921 + 0.00002 * it * it / 10) },

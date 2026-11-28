@@ -5,7 +5,6 @@ import io.github.koolunkle.alleyglow.data.remote.dto.LatLngDto
 import io.github.koolunkle.alleyglow.data.remote.dto.ShiftDto
 import io.github.koolunkle.alleyglow.data.remote.dto.ShiftStartDto
 import io.github.koolunkle.alleyglow.data.remote.dto.TrackPointDto
-import io.github.koolunkle.alleyglow.data.remote.dto.ZoneShareDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -30,11 +29,6 @@ class ShiftRemoteDataSource @Inject constructor(
 
     /** 이미 있으면 건너뜀. 재시도해도 안전 */
     suspend fun insertCollection(collection: CollectionDto) = insert("collections", collection, onConflict = "ignore-duplicates")
-
-    /** 근무의 GPS 기록 중 배정 구역 칸 안에 든 수(서버 함수, RLS로 본인 근무만) */
-    suspend fun fetchZoneShare(shiftId: String): ZoneShareDto? = client.get("rpc/shift_zone_share") {
-        parameter("p_shift_id", shiftId)
-    }.body<List<ZoneShareDto>>().firstOrNull()
 
     /** 근무 GPS 기록(기록 순). RLS로 본인 근무만 */
     // shortcut: PostgREST 기본 최대 1000행(30초 간격이면 8시간), 더 긴 근무가 생기면 Range로 나눠 받음
