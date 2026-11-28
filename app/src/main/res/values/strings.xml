@@ -33,6 +33,8 @@
     <string name="zonemap_select_hint">격자에서 근무할 구역을 고르세요</string>
     <string name="zonemap_select_action">%1$s 선택</string>
     <string name="zonemap_slot_all">평균</string>
+    <!-- 시간대 칩: 시작 시각만(19시 = 19–20시) -->
+    <string name="zonemap_slot">%1$d시</string>
     <string name="zonemap_legend_title">추천도</string>
     <string name="zonemap_legend_low">낮음</string>
     <string name="zonemap_legend_high">높음</string>
@@ -75,6 +77,10 @@
     <string name="shift_slot_next">다음 %1$d–%2$d시</string>
     <string name="shift_before_photos">청소 전 사진</string>
     <string name="shift_before_photos_caption">근무 종료 때 같은 자리, 같은 각도로 청소 후 사진을 찍어요</string>
+    <string name="shift_leave_title">근무를 그만둘까요?</string>
+    <string name="shift_leave_body">센 봉투 수와 청소 전 사진이 저장되지 않고 위치 기록도 멈춰요. 근무를 마치려면 근무 종료를 눌러 주세요.</string>
+    <string name="shift_leave_confirm">그만두기</string>
+    <string name="shift_leave_cancel">계속 근무</string>
     <string name="shift_checkin_list">이번 근무에 체크인한 가게</string>
     <string name="shift_checkin">QR 체크인</string>
     <string name="shift_finish">근무 종료</string>

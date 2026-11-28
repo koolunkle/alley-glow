@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -22,12 +23,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,8 +68,21 @@ fun ShiftRoute(
     zoneName: String,
     onCheckin: (shiftId: String, startedAt: Long) -> Unit,
     onFinish: (shiftId: String, startedAt: Long, beforePhotos: List<String>, bagsByHour: List<Int>) -> Unit,
+    onLeave: () -> Unit,
     viewModel: ShiftViewModel = hiltViewModel(),
 ) {
+    // 뒤로 가기 한 번에 봉투 기록·사진·위치 기록이 사라지지 않게 한 번 더 물음
+    var confirmLeave by rememberSaveable { mutableStateOf(false) }
+    BackHandler { confirmLeave = true }
+    if (confirmLeave) {
+        AlertDialog(
+            onDismissRequest = { confirmLeave = false },
+            title = { Text(stringResource(R.string.shift_leave_title)) },
+            text = { Text(stringResource(R.string.shift_leave_body)) },
+            confirmButton = { TextButton(onClick = onLeave) { Text(stringResource(R.string.shift_leave_confirm)) } },
+            dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text(stringResource(R.string.shift_leave_cancel)) } },
+        )
+    }
     // 체크인 화면에서 돌아올 때마다 체크인 수를 새로 셈
     LifecycleResumeEffect(Unit) {
         viewModel.refreshCheckins()

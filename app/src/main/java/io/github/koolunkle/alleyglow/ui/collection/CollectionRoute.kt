@@ -240,7 +240,7 @@ private fun WorkSummary(workedMinutes: Long, zoneShare: ZoneShare?) {
                 Text(stringResource(R.string.collection_wage), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(stringResource(R.string.collection_wage_basis, HOURLY_WAGE_WON.won()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(estimateWage(workedMinutes).won(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Text(estimateWage(workedMinutes).won(), style = MaterialTheme.typography.titleLarge)
         }
         zoneShare?.let { share ->
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)

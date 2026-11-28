@@ -140,7 +140,7 @@ private fun SlotChips(slot: Int?, onSelect: (Int?) -> Unit) {
     )
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
         (listOf(null) + NIGHT_SLOT_HOURS.indices).forEach { s ->
-            val label = s?.let { stringResource(R.string.slot_hours, NIGHT_SLOT_HOURS[it], NIGHT_SLOT_HOURS[it] + 1) }
+            val label = s?.let { stringResource(R.string.zonemap_slot, NIGHT_SLOT_HOURS[it]) }
                 ?: stringResource(R.string.zonemap_slot_all)
             FilterChip(
                 selected = s == slot,

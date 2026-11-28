@@ -45,6 +45,7 @@ fun AlleyGlowNavHost() {
                 onFinish = { shiftId, startedAt, beforePhotos, bagsByHour ->
                     navController.navigate(AppRoute.Collection(shiftId, zoneId, startedAt, beforePhotos, bagsByHour))
                 },
+                onLeave = { navController.popBackStack() },
             )
         }
         composable<AppRoute.Checkin> {

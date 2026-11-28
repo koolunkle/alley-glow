@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.mlkit.common.MlKitException
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import io.github.koolunkle.alleyglow.ui.common.SubTopBar
@@ -74,7 +75,13 @@ fun CheckinRoute(
     val scan = {
         scanner.startScan()
             .addOnSuccessListener { barcode -> barcode.rawValue?.let(viewModel::checkIn) }
-            .addOnFailureListener { viewModel.onScannerFailed() }
+            // 스캐너에서 뒤로 가기는 근무 화면으로. Play 서비스 버전에 따라 취소가 실패(201, 13)로 옴
+            // shortcut: 13(INTERNAL)은 실제 스캐너 오류와 구분이 안 돼 함께 근무 화면으로 감, 오류 안내가 필요해지면 스캐너가 뜬 뒤인지 따로 확인
+            .addOnCanceledListener { onDone() }
+            .addOnFailureListener { e ->
+                val code = (e as? MlKitException)?.errorCode
+                if (code == MlKitException.CODE_SCANNER_CANCELLED || code == MlKitException.INTERNAL) onDone() else viewModel.onScannerFailed()
+            }
         Unit
     }
     // 대략적 위치만 허용하면 50m 판정이 안 되므로 정확한 위치를 요구
