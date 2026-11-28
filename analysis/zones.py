@@ -4,6 +4,7 @@
 - 야간 인구: 서울 생활인구(250m 격자), 금·토 19~23시(시간 19·20·21·22) 평균
 - 휴지통 공백: 칸 중심에서 가장 가까운 가로휴지통까지 거리(geocode_bins.py 결과)
 - 야간 매출: 상권 추정매출 21~24시(2025년 분기 평균)를 상권 영역과 겹친 면적 비율로 나눔
+시간대별 추천도(score_19 … score_22): 야간 인구만 그 한 시간 값으로 바꿔 같은 식으로 계산(휴지통·매출은 시간 구분 없음)
 결과: data/zones_itaewon.csv, data/pop_hourly_itaewon.csv(36칸 합계, 시간대별 금·토·평일 평균)
 """
 import csv
@@ -24,7 +25,7 @@ OUT_HOURLY = ROOT / "data" / "pop_hourly_itaewon.csv"
 STATION = (37.5345, 126.9944)  # 이태원역
 CELL, COLS, ROWS = 250, 6, 6
 WEIGHTS = {"pop": 0.5, "bin_gap": 0.3, "sales": 0.2}
-NIGHT_HOURS = {"19", "20", "21", "22"}
+NIGHT_HOURS = ("19", "20", "21", "22")
 WEEKEND = ("20261113", "20261114")  # 금·토
 WEEKDAY = ("20261111", "20261112", "20261116", "20261117")  # 수·목·월·화(비교용)
 
@@ -68,6 +69,9 @@ def population(cells):
         def night_avg(ds):
             return statistics.mean(sum(c["hourly"].get((d, h), 0.0) for d in ds) / len(ds) for h in NIGHT_HOURS)
         c["pop"], c["pop_weekday"] = night_avg(WEEKEND), night_avg(WEEKDAY)
+        for h in NIGHT_HOURS:
+            c[f"pop_{h}"] = sum(c["hourly"].get((d, h), 0.0) for d in WEEKEND) / len(WEEKEND)
+            c[f"pop_weekday_{h}"] = sum(c["hourly"].get((d, h), 0.0) for d in WEEKDAY) / len(WEEKDAY)
 
 
 def sales(cells):
@@ -154,19 +158,26 @@ def main():
         normalize(cells, "bin_dist", "bin_gap_n")
     else:
         print("휴지통 좌표 없음: 인구 0.5·매출 0.2만으로 계산(임시)")
+    for h in NIGHT_HOURS:
+        normalize(cells, f"pop_{h}", f"pop_n_{h}")
+
+    def score(c, pop_n):
+        s = (WEIGHTS["pop"] * pop_n + WEIGHTS["sales"] * c["sales_n"]
+             + (WEIGHTS["bin_gap"] * c["bin_gap_n"] if has_bins else 0.0))
+        return s if has_bins else s / (WEIGHTS["pop"] + WEIGHTS["sales"])
     for c in cells:
-        c["score"] = (WEIGHTS["pop"] * c["pop_n"] + WEIGHTS["sales"] * c["sales_n"]
-                      + (WEIGHTS["bin_gap"] * c["bin_gap_n"] if has_bins else 0.0))
-        if not has_bins:
-            c["score"] /= WEIGHTS["pop"] + WEIGHTS["sales"]
+        c["score"] = score(c, c["pop_n"])
+        for h in NIGHT_HOURS:
+            c[f"score_{h}"] = score(c, c[f"pop_n_{h}"])
     name_cells(cells, dong_names)
     cols = ["id", "row", "col", "grid_code", "name", "lat", "lng", "pop", "pop_weekday", "bin_dist", "bins_in",
             "sales", "pop_n", "bin_gap_n", "sales_n", "score"]
+    cols += [f"{k}_{h}" for k in ("pop", "pop_weekday", "score") for h in NIGHT_HOURS]
     with OUT.open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(cols)
         for c in cells:
-            w.writerow([round(c[k], 4 if k in ("pop_n", "bin_gap_n", "sales_n", "score") else 6 if k in ("lat", "lng") else 1)
+            w.writerow([round(c[k], 4 if k in ("pop_n", "bin_gap_n", "sales_n", "score") or k.startswith("score_") else 6 if k in ("lat", "lng") else 1)
                         if isinstance(c.get(k), float) else c.get(k, "") for k in cols])
     with OUT_HOURLY.open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
