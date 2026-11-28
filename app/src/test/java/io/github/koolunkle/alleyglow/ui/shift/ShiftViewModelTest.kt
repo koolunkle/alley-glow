@@ -2,6 +2,7 @@ package io.github.koolunkle.alleyglow.ui.shift
 
 import androidx.lifecycle.SavedStateHandle
 import io.github.koolunkle.alleyglow.domain.model.AdSlot
+import io.github.koolunkle.alleyglow.domain.model.CheckedInShop
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 import io.github.koolunkle.alleyglow.domain.model.currentAt
@@ -42,10 +43,10 @@ class ShiftViewModelTest {
         override fun stop() {}
     }
 
-    private class FakeCheckins(var count: Result<Int> = Result.success(0)) : CheckinRepository {
+    private class FakeCheckins(var list: Result<List<CheckedInShop>> = Result.success(emptyList())) : CheckinRepository {
         override suspend fun checkIn(shiftId: String, zoneId: String, startedAt: Long, shopCode: String, location: GeoPoint) =
             Result.success<CheckinResult>(CheckinResult.UnknownShop(shopCode))
-        override suspend fun countCheckins(shiftId: String) = count
+        override suspend fun getCheckins(shiftId: String) = list
     }
 
     private fun viewModel(
@@ -70,14 +71,15 @@ class ShiftViewModelTest {
     }
 
     @Test
-    fun `체크인 수는 다시 셀 때 갱신되고 실패하면 이전 값을 유지한다`() {
-        val checkins = FakeCheckins(Result.success(2))
+    fun `체크인 목록은 다시 받을 때 갱신되고 실패하면 이전 목록을 유지한다`() {
+        val shops = listOf(CheckedInShop("가게 A", 1L), CheckedInShop("가게 B", 2L))
+        val checkins = FakeCheckins(Result.success(shops))
         val vm = viewModel(Result.success(slots), checkins = checkins)
         vm.refreshCheckins()
-        assertEquals(2, vm.checkinCount.value)
-        checkins.count = Result.failure(IllegalStateException())
+        assertEquals(shops, vm.checkedIn.value)
+        checkins.list = Result.failure(IllegalStateException())
         vm.refreshCheckins()
-        assertEquals(2, vm.checkinCount.value)
+        assertEquals(shops, vm.checkedIn.value)
     }
 
     @Test

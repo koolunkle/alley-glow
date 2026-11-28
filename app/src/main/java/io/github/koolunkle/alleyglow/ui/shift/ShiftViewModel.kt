@@ -3,6 +3,7 @@ package io.github.koolunkle.alleyglow.ui.shift
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.koolunkle.alleyglow.domain.model.CheckedInShop
 import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.bagSlotOf
@@ -54,12 +55,12 @@ class ShiftViewModel @Inject constructor(
         savedStateHandle[KEY_BEFORE_PHOTOS] = ArrayList(beforePhotos.value.withoutIndex(index))
     }
 
-    private val _checkinCount = MutableStateFlow(0)
-    val checkinCount: StateFlow<Int> = _checkinCount.asStateFlow()
+    private val _checkedIn = MutableStateFlow<List<CheckedInShop>>(emptyList())
+    val checkedIn: StateFlow<List<CheckedInShop>> = _checkedIn.asStateFlow()
 
     /** 화면에 돌아올 때마다(체크인 후 등) 서버에서 다시 셈. 실패하면 이전 값 유지 */
     fun refreshCheckins() {
-        viewModelScope.launch { checkins.countCheckins(shiftId).onSuccess { _checkinCount.value = it } }
+        viewModelScope.launch { checkins.getCheckins(shiftId).onSuccess { _checkedIn.value = it } }
     }
 
     /** 채운 봉투를 누른 순서대로의 시간대 칸(0~3). 되돌리기(-1)와 시간대별 집계에 씀 */

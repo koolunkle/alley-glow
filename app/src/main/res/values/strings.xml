@@ -75,6 +75,7 @@
     <string name="shift_slot_next">다음 %1$d–%2$d시</string>
     <string name="shift_before_photos">청소 전 사진</string>
     <string name="shift_before_photos_caption">근무 종료 때 같은 자리, 같은 각도로 청소 후 사진을 찍어요</string>
+    <string name="shift_checkin_list">이번 근무에 체크인한 가게</string>
     <string name="shift_checkin">QR 체크인</string>
     <string name="shift_finish">근무 종료</string>
     <string name="emergency_body">번호를 누르면 전화 앱이 열리고, 통화 버튼을 눌러야 연결됩니다.</string>

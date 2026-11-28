@@ -2,6 +2,9 @@ package io.github.koolunkle.alleyglow.domain.model
 
 data class GeoPoint(val lat: Double, val lng: Double)
 
+/** 이번 근무에 체크인한 가게 한 곳. checkedAt: epoch ms */
+data class CheckedInShop(val shopName: String, val checkedAt: Long)
+
 /** 체크인 판정(가게 50m 안만 인정, 판정은 서버 check_in 함수) */
 sealed interface CheckinResult {
     data class CheckedIn(val shopName: String, val distanceM: Int) : CheckinResult

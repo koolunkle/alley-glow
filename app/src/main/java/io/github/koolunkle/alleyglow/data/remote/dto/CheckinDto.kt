@@ -1,5 +1,6 @@
 package io.github.koolunkle.alleyglow.data.remote.dto
 
+import io.github.koolunkle.alleyglow.domain.model.CheckedInShop
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,6 +23,18 @@ data class CheckinResponseDto(
     @SerialName("distance_m") val distanceM: Int,
     @SerialName("checked_in") val checkedIn: Boolean,
 )
+
+/** `checkins` 행과 가게 이름(shop_id 외래 키로 shops를 임베드) */
+@Serializable
+data class CheckinRecordDto(
+    @SerialName("checked_at") val checkedAt: String,
+    val shops: ShopNameDto,
+)
+
+@Serializable
+data class ShopNameDto(val name: String)
+
+fun CheckinRecordDto.toCheckedInShop(): CheckedInShop? = checkedAt.parseIsoUtc()?.let { CheckedInShop(shops.name, it) }
 
 fun CheckinResponseDto?.toCheckinResult(shopCode: String): CheckinResult = when {
     this == null -> CheckinResult.UnknownShop(shopCode)

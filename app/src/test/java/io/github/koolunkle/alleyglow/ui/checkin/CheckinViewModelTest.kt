@@ -1,6 +1,7 @@
 package io.github.koolunkle.alleyglow.ui.checkin
 
 import androidx.lifecycle.SavedStateHandle
+import io.github.koolunkle.alleyglow.domain.model.CheckedInShop
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 import io.github.koolunkle.alleyglow.domain.model.shopCodeOf
@@ -25,7 +26,7 @@ class CheckinViewModelTest {
         var sentCode: String? = null
         override suspend fun checkIn(shiftId: String, zoneId: String, startedAt: Long, shopCode: String, location: GeoPoint) =
             result.also { sentCode = shopCode }
-        override suspend fun countCheckins(shiftId: String) = Result.success(3)
+        override suspend fun getCheckins(shiftId: String) = Result.success(List(3) { CheckedInShop("가게 $it", 0L) })
     }
 
     private class FakeLocation(val point: GeoPoint?) : LocationRepository {

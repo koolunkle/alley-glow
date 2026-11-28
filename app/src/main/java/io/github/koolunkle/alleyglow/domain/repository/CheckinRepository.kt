@@ -1,5 +1,6 @@
 package io.github.koolunkle.alleyglow.domain.repository
 
+import io.github.koolunkle.alleyglow.domain.model.CheckedInShop
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 
@@ -13,6 +14,6 @@ interface CheckinRepository {
         location: GeoPoint,
     ): Result<CheckinResult>
 
-    /** 이 근무에서 체크인한 가게 수. 근무 행이 아직 없으면 0 */
-    suspend fun countCheckins(shiftId: String): Result<Int>
+    /** 이 근무에서 체크인한 가게(시각 순). 근무 행이 아직 없으면 빈 목록 */
+    suspend fun getCheckins(shiftId: String): Result<List<CheckedInShop>>
 }

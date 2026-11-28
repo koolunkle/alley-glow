@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.R
 import io.github.koolunkle.alleyglow.domain.model.AdSlot
+import io.github.koolunkle.alleyglow.domain.model.CheckedInShop
 import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.currentAt
 import io.github.koolunkle.alleyglow.domain.model.nextAfter
@@ -71,7 +72,7 @@ fun ShiftRoute(
         viewModel.refreshCheckins()
         onPauseOrDispose {}
     }
-    val checkinCount by viewModel.checkinCount.collectAsStateWithLifecycle()
+    val checkedIn by viewModel.checkedIn.collectAsStateWithLifecycle()
     val bagLog by viewModel.bagLog.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val beforePhotos by viewModel.beforePhotos.collectAsStateWithLifecycle()
@@ -97,7 +98,7 @@ fun ShiftRoute(
         beforePhotos = beforePhotos,
         isTracking = isTracking,
         permissionDenied = permissionDenied,
-        checkinCount = checkinCount,
+        checkedIn = checkedIn,
         bagCount = bagLog.size,
         onAddBag = { viewModel.addBag(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) },
         onUndoBag = viewModel::undoBag,
@@ -136,7 +137,7 @@ fun ShiftScreen(
     beforePhotos: List<String>,
     isTracking: Boolean,
     permissionDenied: Boolean,
-    checkinCount: Int,
+    checkedIn: List<CheckedInShop>,
     bagCount: Int,
     onAddBag: () -> Unit,
     onUndoBag: () -> Unit,
@@ -190,7 +191,7 @@ fun ShiftScreen(
             if (!isTracking) TrackingConsent(permissionDenied, onStartTracking)
             // 숫자와 그 숫자를 바꾸는 버튼을 한 카드에. 두 카드 높이를 맞춤
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                CounterCard(stringResource(R.string.shift_checkins), stringResource(R.string.shift_checkins_value, checkinCount)) {
+                CounterCard(stringResource(R.string.shift_checkins), stringResource(R.string.shift_checkins_value, checkedIn.size)) {
                     Button(
                         onClick = onCheckin,
                         colors = ButtonDefaults.buttonColors(
@@ -205,6 +206,7 @@ fun ShiftScreen(
                     BagButtons(bagCount, onAddBag, onUndoBag)
                 }
             }
+            if (checkedIn.isNotEmpty()) CheckinList(checkedIn)
             when (uiState) {
                 ShiftUiState.Loading -> Box(Modifier.fillMaxWidth(), Alignment.Center) { CircularProgressIndicator() }
                 ShiftUiState.Error -> LoadFailedNotice(stringResource(R.string.shift_slots_error), onRetry)
@@ -246,7 +248,7 @@ private fun ShiftScreenPreview() {
             beforePhotos = emptyList(),
             isTracking = false,
             permissionDenied = false,
-            checkinCount = 2,
+            checkedIn = listOf(CheckedInShop("[가게명 1]", now - 50 * 60_000), CheckedInShop("[가게명 2]", now - 10 * 60_000)),
             bagCount = 3,
             onAddBag = {}, onUndoBag = {},
             onRetry = {}, onStartTracking = {}, onAddBeforePhoto = {}, onRemoveBeforePhoto = {}, onCheckin = {}, onFinish = {},

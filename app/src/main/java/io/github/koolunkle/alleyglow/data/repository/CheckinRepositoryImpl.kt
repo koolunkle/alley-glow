@@ -2,8 +2,10 @@ package io.github.koolunkle.alleyglow.data.repository
 
 import io.github.koolunkle.alleyglow.data.remote.CheckinRemoteDataSource
 import io.github.koolunkle.alleyglow.data.remote.dto.CheckinRequestDto
+import io.github.koolunkle.alleyglow.data.remote.dto.toCheckedInShop
 import io.github.koolunkle.alleyglow.data.remote.dto.toCheckinResult
 import io.github.koolunkle.alleyglow.data.remote.dto.toIsoUtc
+import io.github.koolunkle.alleyglow.domain.model.CheckedInShop
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import io.github.koolunkle.alleyglow.domain.model.GeoPoint
 import io.github.koolunkle.alleyglow.domain.repository.CheckinRepository
@@ -24,7 +26,7 @@ class CheckinRepositoryImpl @Inject constructor(
         remote.checkIn(request).toCheckinResult(shopCode)
     }
 
-    override suspend fun countCheckins(shiftId: String): Result<Int> = result {
-        remote.countCheckins(shiftId)
+    override suspend fun getCheckins(shiftId: String): Result<List<CheckedInShop>> = result {
+        remote.fetchCheckins(shiftId).mapNotNull { it.toCheckedInShop() }
     }
 }

@@ -41,7 +41,7 @@ class CheckinViewModel @Inject constructor(
             }
             _uiState.value = checkins.checkIn(shiftId, zoneId, startedAt, shopCodeOf(qr), here).fold(
                 onSuccess = { result ->
-                    val count = if (result is CheckinResult.CheckedIn) checkins.countCheckins(shiftId).getOrNull() else null
+                    val count = if (result is CheckinResult.CheckedIn) checkins.getCheckins(shiftId).getOrNull()?.size else null
                     CheckinUiState.Done(result, System.currentTimeMillis(), count)
                 },
                 onFailure = { CheckinUiState.Error(CheckinError.NETWORK) },
