@@ -14,6 +14,12 @@ data class ZoneDto(
     @SerialName("weekday_pop") val weekdayPop: Int? = null,
     @SerialName("bin_dist_m") val binDistM: Int? = null,
     @SerialName("night_sales") val nightSales: Long? = null,
+    @SerialName("score_by_hour") val scoreByHour: List<Float>? = null,
+    @SerialName("night_pop_by_hour") val nightPopByHour: List<Int>? = null,
+    @SerialName("weekday_pop_by_hour") val weekdayPopByHour: List<Int>? = null,
 )
 
-fun ZoneDto.toZone() = Zone(gridId, name, score, nightPop, weekdayPop, binDistM, nightSales)
+fun ZoneDto.toZone() = Zone(
+    gridId, name, score, nightPop, weekdayPop, binDistM, nightSales,
+    scoreByHour.orEmpty(), nightPopByHour.orEmpty(), weekdayPopByHour.orEmpty(),
+)

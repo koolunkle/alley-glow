@@ -30,6 +30,8 @@
     <string name="zonemap_load_error">구역 정보를 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.</string>
     <string name="zonemap_select_hint">격자에서 근무할 구역을 고르세요</string>
     <string name="zonemap_select_action">%1$s 선택</string>
+    <string name="zonemap_slot_all">평균</string>
+    <string name="zonemap_slot">%1$d–%2$d시</string>
     <string name="zonemap_legend_title">추천도</string>
     <string name="zonemap_legend_low">낮음</string>
     <string name="zonemap_legend_high">높음</string>
@@ -37,7 +39,7 @@
     <string name="zonemap_rank">추천 %1$d위 · %2$d칸 중</string>
     <string name="zonemap_score">추천 지수 %1$d/100</string>
     <string name="zonemap_score_info_desc">추천 지수 설명</string>
-    <string name="zonemap_score_info">밤 인구 50%, 휴지통 거리 30%, 심야 매출 20%를 36칸 안에서 비교해 100점 만점으로 환산했어요. 가중치는 가정값입니다.</string>
+    <string name="zonemap_score_info">밤 인구 50%, 휴지통 거리 30%, 심야 매출 20%를 36칸 안에서 비교해 100점 만점으로 환산했어요. 시간대를 고르면 밤 인구를 그 한 시간 값으로 바꿔 계산해요. 가중치는 가정값입니다.</string>
     <string name="zonemap_fact_pop">밤 인구</string>
     <string name="zonemap_fact_pop_value">%1$s명</string>
     <string name="zonemap_fact_pop_vs_weekday">평일보다 %1$s</string>

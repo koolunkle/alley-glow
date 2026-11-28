@@ -41,6 +41,13 @@ class ZoneMapViewModel @Inject constructor(
         }
     }
 
+    /** 고른 구역은 그대로 두고 순위·색만 그 시간대로 */
+    fun selectSlot(slot: Int?) {
+        _uiState.update { state ->
+            if (state is ZoneMapUiState.Success) state.copy(slot = slot) else state
+        }
+    }
+
     fun selectZone(zoneId: String) {
         _uiState.update { state ->
             if (state is ZoneMapUiState.Success) state.copy(selectedZoneId = zoneId) else state

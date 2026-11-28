@@ -3,6 +3,7 @@ package io.github.koolunkle.alleyglow.ui.zonemap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.R
+import io.github.koolunkle.alleyglow.domain.model.BAG_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.Zone
 import io.github.koolunkle.alleyglow.ui.checkin.formatDistance
 import io.github.koolunkle.alleyglow.ui.common.LoadFailedNotice
@@ -75,6 +79,7 @@ fun ZoneMapRoute(
         uiState = uiState,
         workerName = workerName,
         onSelectZone = viewModel::selectZone,
+        onSelectSlot = viewModel::selectSlot,
         onRetry = viewModel::load,
         onStartShift = onStartShift,
         onSignOut = onSignOut,
@@ -87,6 +92,7 @@ fun ZoneMapScreen(
     uiState: ZoneMapUiState,
     workerName: String?,
     onSelectZone: (String) -> Unit,
+    onSelectSlot: (Int?) -> Unit,
     onRetry: () -> Unit,
     onStartShift: (zoneId: String, zoneName: String) -> Unit,
     onSignOut: () -> Unit,
@@ -107,12 +113,15 @@ fun ZoneMapScreen(
                 }
                 ZoneMapUiState.Error -> LoadFailedNotice(stringResource(R.string.zonemap_load_error), onRetry)
                 is ZoneMapUiState.Success -> {
-                    val ranks = remember(uiState.zones) {
-                        uiState.zones.sortedByDescending { it.score }.mapIndexed { i, z -> z.id to i + 1 }.toMap()
+                    val slot = uiState.slot
+                    val ranks = remember(uiState.zones, slot) {
+                        uiState.zones.sortedByDescending { it.scoreAt(slot) }.mapIndexed { i, z -> z.id to i + 1 }.toMap()
                     }
-                    MapCard(uiState.zones, ranks, uiState.selectedZoneId, onSelectZone)
+                    // 시간대 값이 없는 데이터(열 추가 전)면 칩 없이 평균만
+                    if (uiState.zones.all { it.scoreByHour.size == BAG_SLOT_HOURS.size }) SlotChips(slot, onSelectSlot)
+                    MapCard(uiState.zones, ranks, slot, uiState.selectedZoneId, onSelectZone)
                     uiState.selectedZone?.let { zone ->
-                        ZoneCard(zone, ranks.getValue(zone.id), uiState.zones.size, onStart = { onStartShift(zone.id, zone.name) })
+                        ZoneCard(zone, ranks.getValue(zone.id), uiState.zones.size, slot, onStart = { onStartShift(zone.id, zone.name) })
                     } ?: Text(stringResource(R.string.zonemap_select_hint), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -122,13 +131,36 @@ fun ZoneMapScreen(
 
 private fun cellColor(accent: Color, score: Float) = accent.copy(alpha = 0.08f + score * 0.82f)
 
+/** 평균과 한 시간 단위 시간대. 고른 칩은 흰 바탕(연두는 '지금 누를 것'에만) */
+@Composable
+private fun SlotChips(slot: Int?, onSelect: (Int?) -> Unit) {
+    val colors = FilterChipDefaults.filterChipColors(
+        selectedContainerColor = MaterialTheme.colorScheme.onSurface,
+        selectedLabelColor = MaterialTheme.colorScheme.surface,
+    )
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        (listOf(null) + BAG_SLOT_HOURS.indices).forEach { s ->
+            val label = s?.let { stringResource(R.string.zonemap_slot, BAG_SLOT_HOURS[it], BAG_SLOT_HOURS[it] + 1) }
+                ?: stringResource(R.string.zonemap_slot_all)
+            FilterChip(
+                selected = s == slot,
+                onClick = { onSelect(s) },
+                label = { Text(label, style = MaterialTheme.typography.labelLarge) },
+                shape = CircleShape,
+                colors = colors,
+                border = null,
+            )
+        }
+    }
+}
+
 /** 격자와 범례를 한 카드에. 북→남, 서→동 순(grid_id 정렬), 상위 3칸 순위와 이태원역 표시 */
 @Composable
-private fun MapCard(zones: List<Zone>, ranks: Map<String, Int>, selectedZoneId: String?, onSelectZone: (String) -> Unit) {
+private fun MapCard(zones: List<Zone>, ranks: Map<String, Int>, slot: Int?, selectedZoneId: String?, onSelectZone: (String) -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
     // 실제 점수 폭(0.07~0.70 등)에 맞춰 색을 펼침. 범례도 '상대 비교'
-    val lo = zones.minOf { it.score }
-    val span = (zones.maxOf { it.score } - lo).takeIf { it > 0f } ?: 1f
+    val lo = zones.minOf { it.scoreAt(slot) }
+    val span = (zones.maxOf { it.scoreAt(slot) } - lo).takeIf { it > 0f } ?: 1f
     Column(
         Modifier
             .fillMaxWidth()
@@ -147,7 +179,7 @@ private fun MapCard(zones: List<Zone>, ranks: Map<String, Int>, selectedZoneId: 
                             Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
-                                .background(cellColor(accent, (zone.score - lo) / span), shape)
+                                .background(cellColor(accent, (zone.scoreAt(slot) - lo) / span), shape)
                                 .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, shape) else Modifier)
                                 .semantics { this.selected = selected }
                                 .clickable(
@@ -226,7 +258,7 @@ private fun Legend() {
 
 /** 고른 구역의 추천 근거(공공데이터 지표 3개)와 근무 시작 */
 @Composable
-private fun ZoneCard(zone: Zone, rank: Int, total: Int, onStart: () -> Unit) {
+private fun ZoneCard(zone: Zone, rank: Int, total: Int, slot: Int?, onStart: () -> Unit) {
     var showInfo by rememberSaveable { mutableStateOf(false) }
     Column(
         Modifier
@@ -247,7 +279,7 @@ private fun ZoneCard(zone: Zone, rank: Int, total: Int, onStart: () -> Unit) {
                         .padding(horizontal = Spacing.s, vertical = 2.dp),
                 )
                 Text(
-                    stringResource(R.string.zonemap_score, (zone.score * 100).roundToInt()),
+                    stringResource(R.string.zonemap_score, (zone.scoreAt(slot) * 100).roundToInt()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -274,11 +306,11 @@ private fun ZoneCard(zone: Zone, rank: Int, total: Int, onStart: () -> Unit) {
             }
         }
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            zone.nightPop?.let { pop ->
+            zone.nightPopAt(slot)?.let { pop ->
                 Fact(
                     stringResource(R.string.zonemap_fact_pop),
                     stringResource(R.string.zonemap_fact_pop_value, "%,d".format(Locale.US, pop)),
-                    zone.weekdayPop?.let { formatChange(pop, it) }?.let { stringResource(R.string.zonemap_fact_pop_vs_weekday, it) },
+                    zone.weekdayPopAt(slot)?.let { formatChange(pop, it) }?.let { stringResource(R.string.zonemap_fact_pop_vs_weekday, it) },
                 )
             }
             zone.binDistM?.let {
@@ -328,11 +360,17 @@ private fun ZoneMapScreenPreview() {
     AlleyGlowTheme {
         ZoneMapScreen(
             uiState = ZoneMapUiState.Success(
-                zones = List(36) { Zone(id = "G%02d".format(it), name = "격자 ${it + 1}", score = (it % 5) / 4f, 5523, 3446, 31, 4_493_365_069) },
+                zones = List(36) {
+                    Zone(
+                        id = "G%02d".format(it), name = "격자 ${it + 1}", score = (it % 5) / 4f, 5523, 3446, 31, 4_493_365_069,
+                        scoreByHour = List(4) { h -> ((it + h) % 5) / 4f }, nightPopByHour = List(4) { 5000 }, weekdayPopByHour = List(4) { 3500 },
+                    )
+                },
                 selectedZoneId = "G19",
+                slot = 1,
             ),
             workerName = "이태원 1조",
-            onSelectZone = {}, onRetry = {}, onStartShift = { _, _ -> }, onSignOut = {},
+            onSelectZone = {}, onSelectSlot = {}, onRetry = {}, onStartShift = { _, _ -> }, onSignOut = {},
         )
     }
 }

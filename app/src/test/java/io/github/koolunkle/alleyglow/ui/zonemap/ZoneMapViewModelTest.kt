@@ -55,6 +55,27 @@ class ZoneMapViewModelTest {
     }
 
     @Test
+    fun `시간대를 바꿔도 고른 구역은 그대로 둔다`() {
+        val vm = viewModel(Result.success(zones))
+        vm.selectZone("G02")
+        vm.selectSlot(2)
+        assertEquals(ZoneMapUiState.Success(zones, "G02", slot = 2), vm.uiState.value)
+        vm.selectSlot(null)
+        assertNull((vm.uiState.value as ZoneMapUiState.Success).slot)
+    }
+
+    @Test
+    fun `시간대 값은 고른 칸을 쓰고 없으면 평균으로 돌아간다`() {
+        val zone = Zone("G01", "격자 1", 0.5f, nightPop = 100, scoreByHour = listOf(0.1f, 0.2f, 0.3f, 0.4f), nightPopByHour = listOf(1, 2, 3, 4))
+        assertEquals(0.5f, zone.scoreAt(null))
+        assertEquals(0.3f, zone.scoreAt(2))
+        assertEquals(4, zone.nightPopAt(3))
+        assertEquals(100, zone.nightPopAt(null))
+        assertEquals(0.5f, Zone("G02", "격자 2", 0.5f).scoreAt(1))
+        assertNull(zone.weekdayPopAt(1))
+    }
+
+    @Test
     fun `격자를 고르면 selectedZone이 바뀐다`() {
         val vm = viewModel(Result.success(zones))
         vm.selectZone("G02")
