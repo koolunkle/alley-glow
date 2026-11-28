@@ -1,6 +1,8 @@
 package io.github.koolunkle.alleyglow.ui.zonemap
 
+import androidx.lifecycle.SavedStateHandle
 import io.github.koolunkle.alleyglow.domain.model.Zone
+import io.github.koolunkle.alleyglow.domain.model.nightSlotOf
 import io.github.koolunkle.alleyglow.domain.model.UserRole
 import io.github.koolunkle.alleyglow.domain.repository.AuthRepository
 import io.github.koolunkle.alleyglow.domain.repository.ZoneRepository
@@ -23,7 +25,8 @@ class ZoneMapViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(result: Result<List<Zone>>, name: Result<String?> = Result.success("데모 워커")) =
+    // 시간대 밖(12시)이 기본이라 처음 시간대는 평균
+    private fun viewModel(result: Result<List<Zone>>, name: Result<String?> = Result.success("데모 워커"), hourOfDay: Int = 12) =
         ZoneMapViewModel(
             object : ZoneRepository {
                 override suspend fun getZones() = result
@@ -34,6 +37,7 @@ class ZoneMapViewModelTest {
                 override suspend fun signOut() {}
                 override suspend fun displayName() = name
             },
+            SavedStateHandle(mapOf("hourOfDay" to hourOfDay)),
         )
 
     @Test
@@ -52,6 +56,21 @@ class ZoneMapViewModelTest {
     fun `불러오기에 실패하면 Error 상태가 된다`() {
         val vm = viewModel(Result.failure(IllegalStateException("network")))
         assertEquals(ZoneMapUiState.Error, vm.uiState.value)
+    }
+
+    @Test
+    fun `지금 시각의 시간대를 먼저 고르고 그 시간 1위 구역을 미리 고른다`() {
+        val hourly = listOf(
+            Zone("G01", "격자 1", 0.9f, scoreByHour = listOf(0.9f, 0.2f, 0.9f, 0.9f)),
+            Zone("G02", "격자 2", 0.1f, scoreByHour = listOf(0.1f, 0.8f, 0.1f, 0.1f)),
+        )
+        assertEquals(ZoneMapUiState.Success(hourly, "G02", slot = 1), viewModel(Result.success(hourly), hourOfDay = 20).uiState.value)
+        assertEquals(ZoneMapUiState.Success(hourly, "G01", slot = null), viewModel(Result.success(hourly), hourOfDay = 23).uiState.value)
+    }
+
+    @Test
+    fun `시간대 칸은 19~22시만 해당하고 나머지는 평균이다`() {
+        assertEquals(listOf(null, 0, 1, 2, 3, null, null), listOf(18, 19, 20, 21, 22, 23, 1).map(::nightSlotOf))
     }
 
     @Test
