@@ -308,7 +308,7 @@ private fun ZoneCard(zone: Zone, rank: Int, total: Int, slot: Int?, onStart: () 
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             zone.nightPopAt(slot)?.let { pop ->
                 Fact(
-                    stringResource(R.string.zonemap_fact_pop),
+                    slot?.let { stringResource(R.string.zonemap_fact_pop_at, NIGHT_SLOT_HOURS[it]) } ?: stringResource(R.string.zonemap_fact_pop),
                     stringResource(R.string.zonemap_fact_pop_value, "%,d".format(Locale.US, pop)),
                     zone.weekdayPopAt(slot)?.let { formatChange(pop, it) }?.let { stringResource(R.string.zonemap_fact_pop_vs_weekday, it) },
                 )

@@ -44,6 +44,7 @@
     <string name="zonemap_score_info_desc">추천 지수 설명</string>
     <string name="zonemap_score_info">밤 인구 50%, 휴지통 거리 30%, 심야 매출 20%를 36칸 안에서 비교해 100점 만점으로 환산했어요. 시간대를 고르면 밤 인구를 그 한 시간 값으로 바꿔 계산해요. 가중치는 가정값입니다.</string>
     <string name="zonemap_fact_pop">밤 인구</string>
+    <string name="zonemap_fact_pop_at">밤 인구 · %1$d시</string>
     <string name="zonemap_fact_pop_value">%1$s명</string>
     <string name="zonemap_fact_pop_vs_weekday">평일보다 %1$s</string>
     <string name="zonemap_fact_bin">가까운 휴지통</string>
@@ -62,7 +63,7 @@
     <string name="shift_elapsed">근무 시간</string>
     <string name="shift_started">%1$s 시작 · %2$s</string>
     <string name="shift_consent_title">위치 기록 꺼짐</string>
-    <string name="shift_consent_body">근무 중에만 30초마다 기록, 구역 근무 확인에만 사용</string>
+    <string name="shift_consent_body">근무 중에만 30초마다 기록해요\n구역 확인에만 써요</string>
     <string name="shift_consent_denied">정확한 위치 권한을 허용해야 기록할 수 있어요.</string>
     <string name="shift_consent_start">동의하고 시작</string>
     <string name="shift_checkins">가게 체크인</string>
