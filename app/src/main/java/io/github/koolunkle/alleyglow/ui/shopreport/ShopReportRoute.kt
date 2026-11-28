@@ -1,8 +1,8 @@
 package io.github.koolunkle.alleyglow.ui.shopreport
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,14 +25,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -47,8 +48,6 @@ import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.theme.AlleyGlowTheme
 import io.github.koolunkle.alleyglow.ui.theme.Spacing
 import io.github.koolunkle.alleyglow.ui.theme.TouchHeight
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Locale
 import io.github.koolunkle.alleyglow.ui.theme.cardSurface
@@ -209,9 +208,14 @@ private fun NightRow(night: NightRecord, loadPhoto: suspend (String) -> ByteArra
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        // 전·후 썸네일. 사진이 없는 밤은 생략
+        // 전·후 썸네일. 누르면 크게 보기, 사진이 없는 밤은 생략
         if (night.beforePhoto != null || night.afterPhoto != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            var viewing by rememberSaveable { mutableStateOf(false) }
+            if (viewing) NightPhotoViewer(night, loadPhoto, onDismiss = { viewing = false })
+            Row(
+                Modifier.clickable(role = Role.Button, onClickLabel = stringResource(R.string.report_photo_open)) { viewing = true },
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
                 NightPhoto(night.beforePhoto, stringResource(R.string.report_photo_before), loadPhoto)
                 NightPhoto(night.afterPhoto, stringResource(R.string.report_photo_after), loadPhoto)
             }
@@ -222,12 +226,7 @@ private fun NightRow(night: NightRecord, loadPhoto: suspend (String) -> ByteArra
 /** 56dp 썸네일. 원본(긴 변 1600px, 업로드 때 방향 보정됨)을 작게 디코딩 */
 @Composable
 private fun NightPhoto(path: String?, label: String, loadPhoto: suspend (String) -> ByteArray?) {
-    val image by produceState<ImageBitmap?>(null, path) {
-        val bytes = path?.let { loadPhoto(it) } ?: return@produceState
-        value = withContext(Dispatchers.Default) {
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = 8 })?.asImageBitmap()
-        }
-    }
+    val image by rememberPhoto(path, sampleSize = 8, loadPhoto)
     Box(
         Modifier.size(56.dp).clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.BottomCenter,

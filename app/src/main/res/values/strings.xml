@@ -164,4 +164,6 @@
     <string name="report_photo_before">전</string>
     <string name="report_photo_after">후</string>
     <string name="report_photo_desc">청소 %1$s 사진</string>
+    <string name="report_photo_open">청소 전후 사진 크게 보기</string>
+    <string name="report_photo_none">사진 없음</string>
 </resources>
