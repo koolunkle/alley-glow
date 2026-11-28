@@ -46,6 +46,7 @@ import io.github.koolunkle.alleyglow.domain.model.HOURLY_WAGE_WON
 import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.MAX_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
+import io.github.koolunkle.alleyglow.domain.model.ZoneShare
 import io.github.koolunkle.alleyglow.domain.model.estimateWage
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.common.PhotoRow
@@ -63,6 +64,7 @@ fun CollectionRoute(
     viewModel: CollectionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val zoneShare by viewModel.zoneShare.collectAsStateWithLifecycle()
     LaunchedEffect(uiState) {
         if (uiState is CollectionUiState.Submitted) onSubmitted()
     }
@@ -70,6 +72,7 @@ fun CollectionRoute(
         CollectionScreen(
             uiState = editing,
             workedMinutes = (viewModel.endedAt - viewModel.startedAt) / 60_000,
+            zoneShare = zoneShare,
             beforePhotoCount = viewModel.beforePhotos.size,
             onBack = onBack,
             onChangeBags = viewModel::changeBags,
@@ -91,6 +94,7 @@ fun CollectionRoute(
 fun CollectionScreen(
     uiState: CollectionUiState.Editing,
     workedMinutes: Long,
+    zoneShare: ZoneShare?,
     /** 근무 화면에서 찍은 청소 전 사진 수(후 사진 안내용) */
     beforePhotoCount: Int,
     onBack: () -> Unit,
@@ -157,7 +161,7 @@ fun CollectionScreen(
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            WorkSummary(workedMinutes)
+            WorkSummary(workedMinutes, zoneShare)
 
             SectionCard(stringResource(R.string.collection_bags), required = true, hint = stringResource(R.string.collection_bags_hint)) {
                 NIGHT_SLOT_HOURS.forEachIndexed { slot, hour ->
@@ -213,9 +217,9 @@ fun CollectionScreen(
     }
 }
 
-/** 근무 시간과 시급제 예상 수당(수거량과 무관) */
+/** 근무 시간과 시급제 예상 수당(수거량과 무관), GPS를 기록했으면 구역 안 비율 */
 @Composable
-private fun WorkSummary(workedMinutes: Long) {
+private fun WorkSummary(workedMinutes: Long, zoneShare: ZoneShare?) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -234,6 +238,20 @@ private fun WorkSummary(workedMinutes: Long) {
                 Text(stringResource(R.string.collection_wage_basis, HOURLY_WAGE_WON.won()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(estimateWage(workedMinutes).won(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        }
+        zoneShare?.let { share ->
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(stringResource(R.string.collection_zone_share), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.collection_zone_share_caption, share.total, share.inside),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(stringResource(R.string.collection_zone_share_value, share.percent), style = MaterialTheme.typography.titleLarge)
+            }
         }
     }
 }
@@ -300,6 +318,7 @@ private fun CollectionScreenPreview() {
                 form = CollectionForm(bags = listOf(1, 2, 1, 0), generalKg = "12.5", recycleKg = "3"),
             ),
             workedMinutes = 232,
+            zoneShare = ZoneShare(total = 48, inside = 44),
             beforePhotoCount = 1,
             onBack = {},
             onChangeBags = { _, _ -> }, onGeneralKgChange = {}, onRecycleKgChange = {},

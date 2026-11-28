@@ -72,6 +72,10 @@ fun ShiftRecord.toCollectionDto(photoPaths: List<String>, beforePhotoPaths: List
     afterPhotoPaths = afterPhotoPaths,
 )
 
+/** `rpc/shift_zone_share` 결과 행 */
+@Serializable
+data class ZoneShareDto(val total: Int, val inside: Int)
+
 /** PostgREST timestamptz(2026-11-21T10:31:00.123+00:00) → epoch ms. 소수 초는 버림, 형식이 다르면 null */
 internal fun String.parseIsoUtc(): Long? = runCatching {
     SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(replace(Regex("\\.\\d+"), ""))?.time

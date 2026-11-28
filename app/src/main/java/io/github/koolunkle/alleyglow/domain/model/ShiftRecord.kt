@@ -1,5 +1,10 @@
 package io.github.koolunkle.alleyglow.domain.model
 
+/** 근무 GPS 기록 중 배정 구역 칸(중심 ±125m) 안에 든 수 */
+data class ZoneShare(val total: Int, val inside: Int) {
+    val percent: Int get() = Math.round(inside * 100f / total)
+}
+
 /** 근무 1회와 근무 종료 때 입력한 수거량 */
 data class ShiftRecord(
     val shiftId: String,

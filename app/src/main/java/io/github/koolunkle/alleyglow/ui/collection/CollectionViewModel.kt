@@ -8,6 +8,7 @@ import io.github.koolunkle.alleyglow.domain.model.MAX_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.ShiftRecord
 import io.github.koolunkle.alleyglow.domain.model.Weight
+import io.github.koolunkle.alleyglow.domain.model.ZoneShare
 import io.github.koolunkle.alleyglow.domain.repository.ShiftRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.koolunkle.alleyglow.ui.common.plusUpTo
@@ -47,6 +48,15 @@ class CollectionViewModel @Inject constructor(
         ),
     )
     val uiState: StateFlow<CollectionUiState> = _uiState.asStateFlow()
+
+    /** 배정 구역 안 GPS 기록 비율. 기록이 없거나 못 받으면 null(화면에서 숨김) */
+    private val _zoneShare = MutableStateFlow<ZoneShare?>(null)
+    val zoneShare: StateFlow<ZoneShare?> = _zoneShare.asStateFlow()
+
+    // shortcut: 서비스가 아직 올리지 않은 위치(최근 2분 30초 안, 최대 4개)는 빠짐, 정확한 값이 필요해지면 서비스 버퍼를 먼저 올린 뒤 셈
+    init {
+        viewModelScope.launch { _zoneShare.value = repository.getZoneShare(shiftId).getOrNull() }
+    }
 
     fun changeBags(slot: Int, delta: Int) = edit { form ->
         form.copy(bags = form.bags.mapIndexed { i, n -> if (i == slot) (n + delta).coerceIn(0, MAX_BAGS) else n })
