@@ -34,6 +34,7 @@
 - 연두(primary)는 "지금 누를 것"(주 버튼, +1)과 작은 라벨에만 쓴다. 정보 카드에 연두 테두리·연두 바탕을 쓰지 않는다. 숫자와 그 숫자를 바꾸는 버튼은 한 카드에 둔다. 아이콘은 `res/drawable/ic_*.xml`(Material Icons 경로, 라이브러리 없이).
 - 화면 문구는 `res/values/strings.xml`(`stringResource`, 서비스는 `getString`)에 둔다. 제목·버튼은 짧은 명사형, 안내는 한 문장. ViewModel은 문구 대신 오류 종류(enum·object)를 넘기고 화면이 리소스로 바꾼다. 단위가 붙는 숫자 포맷(`formatWon`·`formatDistance` 등, 테스트 있음)만 코드에 둔다.
 - 사용자에게 보이는 오류 문구는 한글 고정 문구를 쓴다. 예외 원문은 보여주지 않는다. 화면 안 오류·실패 안내는 `ui/common/InlineNotice`(본문색 글자 + 주황 경고 아이콘, 남색 줄)로 보인다. 불러오기 실패는 다시 시도 버튼을 붙인 `LoadFailedNotice`.
+- 밤 시간대 칸(19~20 … 22~23시)은 `domain/model/NightSlot.kt`의 `NIGHT_SLOT_HOURS` 하나를 봉투 기록·근무 종료 폼·구역 지도 칩이 함께 쓴다(칸 이름 문구는 `slot_hours`).
 - 과한 설계를 피한다. 임시 처리에는 `// shortcut: <한계>, <바꿀 시점>` 주석을 단다.
 
 ## 현재 상태 (MVP 화면 시안 기준)
