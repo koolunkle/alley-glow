@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.R
-import io.github.koolunkle.alleyglow.domain.model.BAG_SLOT_HOURS
+import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.Zone
 import io.github.koolunkle.alleyglow.ui.checkin.formatDistance
 import io.github.koolunkle.alleyglow.ui.common.LoadFailedNotice
@@ -118,7 +118,7 @@ fun ZoneMapScreen(
                         uiState.zones.sortedByDescending { it.scoreAt(slot) }.mapIndexed { i, z -> z.id to i + 1 }.toMap()
                     }
                     // 시간대 값이 없는 데이터(열 추가 전)면 칩 없이 평균만
-                    if (uiState.zones.all { it.scoreByHour.size == BAG_SLOT_HOURS.size }) SlotChips(slot, onSelectSlot)
+                    if (uiState.zones.all { it.scoreByHour.size == NIGHT_SLOT_HOURS.size }) SlotChips(slot, onSelectSlot)
                     MapCard(uiState.zones, ranks, slot, uiState.selectedZoneId, onSelectZone)
                     uiState.selectedZone?.let { zone ->
                         ZoneCard(zone, ranks.getValue(zone.id), uiState.zones.size, slot, onStart = { onStartShift(zone.id, zone.name) })
@@ -139,8 +139,8 @@ private fun SlotChips(slot: Int?, onSelect: (Int?) -> Unit) {
         selectedLabelColor = MaterialTheme.colorScheme.surface,
     )
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        (listOf(null) + BAG_SLOT_HOURS.indices).forEach { s ->
-            val label = s?.let { stringResource(R.string.zonemap_slot, BAG_SLOT_HOURS[it], BAG_SLOT_HOURS[it] + 1) }
+        (listOf(null) + NIGHT_SLOT_HOURS.indices).forEach { s ->
+            val label = s?.let { stringResource(R.string.slot_hours, NIGHT_SLOT_HOURS[it], NIGHT_SLOT_HOURS[it] + 1) }
                 ?: stringResource(R.string.zonemap_slot_all)
             FilterChip(
                 selected = s == slot,

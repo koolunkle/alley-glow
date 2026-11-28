@@ -1,10 +1,10 @@
 package io.github.koolunkle.alleyglow.ui.collection
 
-import io.github.koolunkle.alleyglow.domain.model.BAG_SLOT_HOURS
+import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
 
 /** 입력 중인 값. 무게는 입력 그대로의 문자열 */
 data class CollectionForm(
-    val bags: List<Int> = List(BAG_SLOT_HOURS.size) { 0 },
+    val bags: List<Int> = List(NIGHT_SLOT_HOURS.size) { 0 },
     val generalKg: String = "",
     val recycleKg: String = "",
     val note: String = "",

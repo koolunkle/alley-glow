@@ -3,8 +3,8 @@ package io.github.koolunkle.alleyglow.ui.shift
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.koolunkle.alleyglow.domain.model.BAG_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
+import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.bagSlotOf
 import io.github.koolunkle.alleyglow.domain.repository.AdSlotRepository
 import io.github.koolunkle.alleyglow.domain.repository.CheckinRepository
@@ -76,7 +76,7 @@ class ShiftViewModel @Inject constructor(
     }
 
     /** 근무 종료 화면에 넘길 시간대별 봉투 수 */
-    fun bagsByHour(): List<Int> = BAG_SLOT_HOURS.indices.map { slot -> bagLog.value.count { it == slot } }
+    fun bagsByHour(): List<Int> = NIGHT_SLOT_HOURS.indices.map { slot -> bagLog.value.count { it == slot } }
 
     private val _uiState = MutableStateFlow<ShiftUiState>(ShiftUiState.Loading)
     val uiState: StateFlow<ShiftUiState> = _uiState.asStateFlow()

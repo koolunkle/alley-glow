@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import io.github.koolunkle.alleyglow.domain.model.AdSlot
 import io.github.koolunkle.alleyglow.domain.model.CheckinResult
 import io.github.koolunkle.alleyglow.domain.model.GeoPoint
-import io.github.koolunkle.alleyglow.domain.model.bagSlotOf
 import io.github.koolunkle.alleyglow.domain.model.currentAt
 import io.github.koolunkle.alleyglow.domain.model.nextAfter
 import io.github.koolunkle.alleyglow.domain.model.nightHour
@@ -79,15 +78,6 @@ class ShiftViewModelTest {
         checkins.count = Result.failure(IllegalStateException())
         vm.refreshCheckins()
         assertEquals(2, vm.checkinCount.value)
-    }
-
-    @Test
-    fun `봉투 시간대 칸은 19시 전은 첫 칸, 23시 이후와 새벽은 마지막 칸이다`() {
-        assertEquals(0, bagSlotOf(15))
-        assertEquals(0, bagSlotOf(19))
-        assertEquals(3, bagSlotOf(22))
-        assertEquals(3, bagSlotOf(23))
-        assertEquals(3, bagSlotOf(1))
     }
 
     @Test

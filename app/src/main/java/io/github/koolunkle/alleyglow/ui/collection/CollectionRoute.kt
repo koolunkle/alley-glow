@@ -42,10 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.koolunkle.alleyglow.R
-import io.github.koolunkle.alleyglow.domain.model.BAG_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.HOURLY_WAGE_WON
 import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.MAX_PHOTOS
+import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.estimateWage
 import io.github.koolunkle.alleyglow.ui.common.InlineNotice
 import io.github.koolunkle.alleyglow.ui.common.PhotoRow
@@ -160,8 +160,8 @@ fun CollectionScreen(
             WorkSummary(workedMinutes)
 
             SectionCard(stringResource(R.string.collection_bags), required = true, hint = stringResource(R.string.collection_bags_hint)) {
-                BAG_SLOT_HOURS.forEachIndexed { slot, hour ->
-                    BagStepper(stringResource(R.string.collection_bag_slot, hour, (hour + 1) % 24), form.bags[slot], enabled) { delta ->
+                NIGHT_SLOT_HOURS.forEachIndexed { slot, hour ->
+                    BagStepper(stringResource(R.string.slot_hours, hour, (hour + 1) % 24), form.bags[slot], enabled) { delta ->
                         onChangeBags(slot, delta)
                     }
                 }

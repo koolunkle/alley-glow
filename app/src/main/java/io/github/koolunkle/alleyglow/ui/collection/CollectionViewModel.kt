@@ -3,9 +3,9 @@ package io.github.koolunkle.alleyglow.ui.collection
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.koolunkle.alleyglow.domain.model.BAG_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.MAX_BEFORE_AFTER_PHOTOS
 import io.github.koolunkle.alleyglow.domain.model.MAX_PHOTOS
+import io.github.koolunkle.alleyglow.domain.model.NIGHT_SLOT_HOURS
 import io.github.koolunkle.alleyglow.domain.model.ShiftRecord
 import io.github.koolunkle.alleyglow.domain.model.Weight
 import io.github.koolunkle.alleyglow.domain.repository.ShiftRepository
@@ -41,7 +41,7 @@ class CollectionViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<CollectionUiState>(
         CollectionUiState.Editing(
             form = savedStateHandle.restoreForm()
-                ?: savedStateHandle.intList("bagsByHour").takeIf { it.size == BAG_SLOT_HOURS.size }
+                ?: savedStateHandle.intList("bagsByHour").takeIf { it.size == NIGHT_SLOT_HOURS.size }
                     ?.let { CollectionForm(bags = it) }
                 ?: CollectionForm(),
         ),
@@ -151,7 +151,7 @@ private fun SavedStateHandle.saveForm(form: CollectionForm) {
 }
 
 private fun SavedStateHandle.restoreForm(): CollectionForm? {
-    val bags = intList("form_bags").takeIf { it.size == BAG_SLOT_HOURS.size } ?: return null
+    val bags = intList("form_bags").takeIf { it.size == NIGHT_SLOT_HOURS.size } ?: return null
     return CollectionForm(
         bags = bags,
         generalKg = get<String>("form_general_kg").orEmpty(),

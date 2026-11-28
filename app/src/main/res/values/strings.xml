@@ -1,6 +1,8 @@
 <resources>
     <!-- 공통 -->
     <string name="app_name">Alley Glow</string>
+    <!-- 밤 시간대 칸(19–20시 …): 봉투 기록, 구역 지도 칩 공통 -->
+    <string name="slot_hours">%1$d–%2$d시</string>
     <string name="role_worker">워커</string>
     <string name="role_shop">상인</string>
     <string name="account_menu">계정 메뉴</string>
@@ -31,7 +33,6 @@
     <string name="zonemap_select_hint">격자에서 근무할 구역을 고르세요</string>
     <string name="zonemap_select_action">%1$s 선택</string>
     <string name="zonemap_slot_all">평균</string>
-    <string name="zonemap_slot">%1$d–%2$d시</string>
     <string name="zonemap_legend_title">추천도</string>
     <string name="zonemap_legend_low">낮음</string>
     <string name="zonemap_legend_high">높음</string>
@@ -112,7 +113,6 @@
     <string name="collection_wage_basis">시급 %1$s · 분 단위</string>
     <string name="collection_bags">채운 봉투 (100L)</string>
     <string name="collection_bags_hint">근무 중에 기록한 봉투 수예요. 실제와 다르면 −/+로 맞춰 주세요</string>
-    <string name="collection_bag_slot">%1$d–%2$d시</string>
     <string name="collection_bags_total">합계</string>
     <string name="collection_bag_minus_desc">%1$s 봉투 하나 빼기</string>
     <string name="collection_bag_plus_desc">%1$s 봉투 하나 더하기</string>
